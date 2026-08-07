@@ -1213,7 +1213,7 @@
             "type": "datetime",
             "isPrimaryKey": false,
             "isUnique": false,
-            "isNullable": false,
+            "isNullable": true,
             "hasDefault": false
           },
           {
@@ -1239,7 +1239,7 @@
             "type": "string",
             "isPrimaryKey": false,
             "isUnique": false,
-            "isNullable": false,
+            "isNullable": true,
             "hasDefault": false
           },
           {
@@ -1290,6 +1290,38 @@
             "isUnique": true,
             "isNullable": true,
             "hasDefault": false
+          },
+          {
+            "name": "session_token",
+            "type": "string",
+            "isPrimaryKey": false,
+            "isUnique": true,
+            "isNullable": true,
+            "hasDefault": false,
+            "maxLength": 64
+          },
+          {
+            "name": "store_slug",
+            "type": "string",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": "erba-west-la",
+            "maxLength": 80
+          },
+          {
+            "name": "fulfillment",
+            "type": "enum",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": "delivery",
+            "enumValues": [
+              "delivery",
+              "pickup"
+            ]
           }
         ],
         "indexes": [
@@ -1297,6 +1329,13 @@
             "name": "carts_uuid_unique",
             "columns": [
               "uuid"
+            ],
+            "type": "unique"
+          },
+          {
+            "name": "carts_session_token_unique",
+            "columns": [
+              "session_token"
             ],
             "type": "unique"
           }
@@ -9233,7 +9272,7 @@
       }
     ]
   },
-  "hash": "2a7773c506ca523c17d7d5151b66861544aeebfa5edca647bedc88d9def6cdf6",
+  "hash": "12ecd968c1cca56042e41e62425befbe7cd36c213dffdb3750860b2a0224a694",
   "dialect": "sqlite",
-  "updatedAt": "2026-08-07T06:44:24.959Z"
+  "updatedAt": "2026-08-07T06:52:10.742Z"
 }
