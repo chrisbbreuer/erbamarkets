@@ -43,7 +43,7 @@ const STORES = [
     pickupHours: 'Coming soon',
     amenities: ['Delivery', 'In-Store Shopping', 'ATM', 'Off-Street Parking', 'Valet'],
     mapUrl: 'https://maps.app.goo.gl/Szvf1TP2Wh5iaHkQ9',
-    imageUrl: 'https://picsum.photos/seed/erba-sawtelle-storefront/1200/1500',
+    imageUrl: '/images/erba/sawtelle-entrance.jpg',
     deliveryMinimum: 30,
     displayOrder: 1,
   },
@@ -64,7 +64,7 @@ const STORES = [
     pickupHours: '9AM - 9:50PM',
     amenities: ['Delivery', 'In-Store Shopping', 'Curbside Pickup', 'ATM', 'Off-Street Parking'],
     mapUrl: 'https://maps.app.goo.gl/8kK1sQ6yQ8bqoUeq7',
-    imageUrl: 'https://picsum.photos/seed/erba-west-la-storefront/1200/1500',
+    imageUrl: '/images/erba/sawtelle-outside.jpg',
     deliveryMinimum: 30,
     displayOrder: 2,
   },
@@ -168,8 +168,15 @@ interface SeedProduct {
   reviewCount: number
   featured?: boolean
   description: string
-  imageSeed: string
+  /** File under public/images/erba, picked per product rather than per category. */
+  image: string
 }
+
+/**
+ * ERBA's own photography, downloaded into public/images/erba. A dispensary
+ * menu is judged on how the product looks, so stock placeholders were never
+ * going to carry this page.
+ */
 
 const PRODUCTS: SeedProduct[] = [
   {
@@ -187,7 +194,7 @@ const PRODUCTS: SeedProduct[] = [
     reviewCount: 8,
     featured: true,
     description: 'Gassy OG nose with a sweet finish. Hand-trimmed, cold-cured, and the jar most of our budtenders take home.',
-    imageSeed: 'erba-flower-blue-flame',
+    image: 'product-cbx.jpg',
   },
   {
     name: 'Purple Carbonite',
@@ -203,7 +210,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.7,
     reviewCount: 6,
     description: 'Grown by a Dutch family farm in Carpinteria. Deep purple bag appeal, grape candy on the exhale.',
-    imageSeed: 'erba-flower-purple-carbonite',
+    image: 'product-flower.jpg',
   },
   {
     name: 'Pink Lotus',
@@ -221,7 +228,7 @@ const PRODUCTS: SeedProduct[] = [
     reviewCount: 61,
     featured: true,
     description: 'Floral and creamy, an easy daytime eighth. The best value on the wall when it is in stock.',
-    imageSeed: 'erba-flower-pink-lotus',
+    image: 'detail-1.jpg',
   },
   {
     name: 'Sour Diesel Smalls',
@@ -237,7 +244,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 3.8,
     reviewCount: 23,
     description: 'Smaller buds, same plant, a third of the price. Sharp fuel and citrus, best before noon.',
-    imageSeed: 'erba-flower-sour-diesel',
+    image: 'product-flower.jpg',
   },
   {
     name: 'Magic Melon Pod',
@@ -254,7 +261,7 @@ const PRODUCTS: SeedProduct[] = [
     reviewCount: 31,
     featured: true,
     description: 'Honeydew and cut grass. Fits every STIIIZY battery on the counter.',
-    imageSeed: 'erba-cart-magic-melon',
+    image: 'product-cart.jpg',
   },
   {
     name: 'Pineapple Express Pod',
@@ -270,7 +277,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.7,
     reviewCount: 285,
     description: 'The one people ask for by name. Tropical, even, and consistent batch to batch.',
-    imageSeed: 'erba-cart-pineapple-express',
+    image: 'product-cart.jpg',
   },
   {
     name: 'Orange Sunset Pod',
@@ -286,7 +293,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.6,
     reviewCount: 102,
     description: 'Bright citrus, clean pull. Pairs with the afternoon you were already going to have.',
-    imageSeed: 'erba-cart-orange-sunset',
+    image: 'detail-3.jpg',
   },
   {
     name: 'Strawberry Cough Cartridge',
@@ -302,7 +309,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.5,
     reviewCount: 74,
     description: 'Full-spectrum and strain-specific, no added terpenes. Berry and earth, very little throat hit.',
-    imageSeed: 'erba-cart-strawberry-cough',
+    image: 'product-cart.jpg',
   },
   {
     name: 'Midnight Blueberry Gummies',
@@ -319,7 +326,7 @@ const PRODUCTS: SeedProduct[] = [
     reviewCount: 1487,
     featured: true,
     description: 'Five to one CBN, twenty milligrams THC per piece. The sleep gummy we restock the most.',
-    imageSeed: 'erba-edible-midnight-blueberry',
+    image: 'product-edible.jpg',
   },
   {
     name: 'Watermelon Lemonade Gummies',
@@ -335,7 +342,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.6,
     reviewCount: 682,
     description: 'Five milligrams a piece, so you can find your line without guessing.',
-    imageSeed: 'erba-edible-watermelon-lemonade',
+    image: 'product-edible.jpg',
   },
   {
     name: 'Marionberry Indica Gummies',
@@ -351,7 +358,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.5,
     reviewCount: 391,
     description: 'Real fruit puree, ten milligrams each. Tastes like the jam, not like the plant.',
-    imageSeed: 'erba-edible-marionberry',
+    image: 'detail-2.jpg',
   },
   {
     name: 'Pink Lemonade Live Resin Chews',
@@ -367,7 +374,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.6,
     reviewCount: 214,
     description: 'Made with live resin instead of distillate, so the strain actually comes through.',
-    imageSeed: 'erba-edible-pink-lemonade',
+    image: 'product-edible.jpg',
   },
   {
     name: 'Wedding Cake Pre-Roll 2 Pack',
@@ -384,7 +391,7 @@ const PRODUCTS: SeedProduct[] = [
     reviewCount: 18,
     featured: true,
     description: 'Two half grams, rolled tight, burns clean to the crutch. Eight dollars all day.',
-    imageSeed: 'erba-preroll-wedding-cake',
+    image: 'product-preroll.jpg',
   },
   {
     name: 'Grower\'s Collection Sativa 6 Pack',
@@ -400,7 +407,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.4,
     reviewCount: 44,
     description: 'Six 0.6 gram joints from whole flower, not trim. The pack to bring, not the one to keep.',
-    imageSeed: 'erba-preroll-growers-collection',
+    image: 'product-preroll.jpg',
   },
   {
     name: 'Cold Cured Live Rosin Badder',
@@ -416,7 +423,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.6,
     reviewCount: 57,
     description: 'Solventless, pressed from fresh frozen, whipped to a badder. Low temp or you waste it.',
-    imageSeed: 'erba-concentrate-live-rosin',
+    image: 'detail-1.jpg',
   },
   {
     name: 'Papaya Live Resin Sauce',
@@ -433,7 +440,7 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.3,
     reviewCount: 39,
     description: 'Terpene-heavy sauce with visible diamonds. Tropical and heavy in equal measure.',
-    imageSeed: 'erba-concentrate-papaya-sauce',
+    image: 'detail-3.jpg',
   },
   {
     name: 'Releaf Balm',
@@ -450,7 +457,7 @@ const PRODUCTS: SeedProduct[] = [
     reviewCount: 903,
     featured: true,
     description: 'One to three THC to CBD in a coconut oil base. Goes on the joint that hurts, nothing else happens.',
-    imageSeed: 'erba-wellness-releaf-balm',
+    image: 'detail-2.jpg',
   },
   {
     name: 'CBD Protab 10 Pack',
@@ -466,7 +473,39 @@ const PRODUCTS: SeedProduct[] = [
     rating: 4.5,
     reviewCount: 128,
     description: 'Twenty five milligrams CBD per tablet, effectively no high. Swallow it and get on with the day.',
-    imageSeed: 'erba-wellness-cbd-protab',
+    image: 'store-back.jpg',
+  },
+  {
+    name: 'Blue Dream Live Rosin Cart',
+    slug: 'blue-dream-live-rosin-cart',
+    brand: 'Claybourne',
+    brandLine: 'Solventless Cart',
+    category: 'cartridges',
+    strainType: 'hybrid',
+    price: 5200,
+    unitSize: '1g',
+    thc: 74.6,
+    cbd: 0.42,
+    rating: 4.4,
+    reviewCount: 46,
+    description: 'Rosin in a cartridge, so it tastes like the plant rather than a flavour. Runs best on a low setting.',
+    image: 'product-cart.jpg',
+  },
+  {
+    name: 'Sunset Sherbert Infused Pre-Roll',
+    slug: 'sunset-sherbert-infused-pre-roll',
+    brand: 'Heavy Hitters',
+    brandLine: 'Infused Single',
+    category: 'pre-rolls',
+    strainType: 'indica',
+    price: 1800,
+    unitSize: '1g',
+    thc: 38.4,
+    cbd: 0.11,
+    rating: 4.2,
+    reviewCount: 71,
+    description: 'Flower rolled with diamonds through the middle. Strong, and worth splitting with someone.',
+    image: 'product-preroll.jpg',
   },
 ]
 
@@ -522,7 +561,7 @@ export default function (cli: CLI): void {
             thcPercentage: product.thc,
             cbdPercentage: product.cbd,
             brandLine: product.brandLine,
-            imageUrl: `https://picsum.photos/seed/${product.imageSeed}/900/1100`,
+            imageUrl: `/images/erba/${product.image}`,
             rating: product.rating,
             reviewCount: product.reviewCount,
             isFeatured: product.featured ?? false,
