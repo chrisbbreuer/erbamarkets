@@ -14,6 +14,9 @@ export default {
   // Storefront: bag, checkout, VIP signup.
   'api': 'api',
 
+  // Sign-in, pointing at the framework's own auth actions.
+  'auth': { path: 'auth', prefix: '/api' },
+
   // Menu search, backed by Typesense with a database fallback.
   'menu': { path: 'menu', prefix: '/api' },
 

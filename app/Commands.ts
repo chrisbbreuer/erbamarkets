@@ -30,5 +30,6 @@ export default {
   'inspire': 'Inspire',
   'seed:catalog': { file: 'SeedCatalog', aliases: ['catalog'] },
   'dispatch': 'Dispatch',
+  'account:create': { file: 'MakeAccount', aliases: ['user:create'] },
   'menu:index': { file: 'IndexMenu', aliases: ['index:menu'] },
 } satisfies CommandRegistry

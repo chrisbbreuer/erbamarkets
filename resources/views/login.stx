@@ -1,0 +1,125 @@
+@layout('erba')
+
+@section('title')Staff sign in - ERBA Markets@endsection
+
+@section('description')Sign in to the ERBA Markets dispatch tools.@endsection
+
+@section('content')
+<script server>
+/*
+ * No data comes from the database here on purpose. A sign-in page that
+ * queries anything gives an unauthenticated visitor a lever to pull.
+ */
+const pageTitle = 'Staff sign in'
+</script>
+
+<script client>
+/**
+ * Sign-in posts to /api/login, which is the framework's LoginAction.
+ *
+ * CSRF stays on, so the token from the readable cookie the framework sets on
+ * every page load goes back in the matching header, exactly as the storefront
+ * does for its bag writes.
+ *
+ * One failure message for every failure. The endpoint already answers the
+ * same way for a wrong password and an unknown address, and echoing which one
+ * it was here would undo that.
+ */
+const email = state('')
+const password = state('')
+const busy = state(false)
+const message = state('')
+const signedInAs = state('')
+
+const csrf = useCookie('X-CSRF-Token')
+
+async function signIn(event) {
+  event.preventDefault()
+
+  if (busy())
+    return
+
+  busy.set(true)
+  message.set('')
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrf() || '',
+      },
+      body: JSON.stringify({ email: email(), password: password() }),
+    })
+
+    if (!res.ok) {
+      message.set('That email and password did not match.')
+      return
+    }
+
+    const payload = await res.json()
+    signedInAs.set(payload?.user?.name || payload?.user?.email || 'you')
+    message.set('')
+  }
+  catch (error) {
+    message.set('Could not reach the server. Try again in a moment.')
+  }
+  finally {
+    busy.set(false)
+  }
+}
+</script>
+
+<template>
+  <div data-stx-content>
+    <main class="section login-section">
+      <div class="shell login-shell">
+        <p class="eyebrow">ERBA staff</p>
+        <h1>{{ pageTitle }}</h1>
+        <p class="section-note login-note">
+          For dispatch and the driver tools. Customers do not need an account to order.
+        </p>
+
+        <form class="login-form" @submit="signIn($event)" :if="!signedInAs()">
+          <label class="field">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              autocomplete="username"
+              required
+              :value="email()"
+              @input="email.set($event.target.value)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <input
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              required
+              :value="password()"
+              @input="password.set($event.target.value)"
+            />
+          </label>
+
+          <p class="login-error" role="alert" :if="message()">{{ message() }}</p>
+
+          <button type="submit" class="btn btn-primary" :disabled="busy()">
+            <span :if="!busy()">Sign in</span>
+            <span :else>Signing in</span>
+          </button>
+        </form>
+
+        <div class="login-done" :if="signedInAs()">
+          <p class="login-welcome">Signed in as {{ signedInAs() }}.</p>
+          <p class="section-note">The dispatch and driver endpoints will accept this session now.</p>
+          <a href="/" class="btn btn-ghost btn-small">Back to the shop</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+@endsection
