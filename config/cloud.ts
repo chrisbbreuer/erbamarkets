@@ -739,7 +739,12 @@ export const tsCloud: TsCloudConfig = {
       // ts-cloud prepends the runtime, so this has to be a file bun can
       // execute — not the ./buddy shell wrapper.
       start: 'bun storage/framework/runtime/production/serve.js',
-      port: 3070,
+      // Verified free against the live box, not against other tenants' config
+      // files: predicthq had been serving on 3070 for a day and a half, and two
+      // services binding the same port with SO_REUSEPORT means the kernel
+      // load-balances between them — erba.stacksjs.com served predicthq, and
+      // predicthq.org served erba.
+      port: 3110,
       // Runs after the repo and the resolved production env are in place and
       // before the systemd service starts. Migrate runs ONLY here: the API
       // site shares the same SQLite file, so migrating from both would put two
@@ -760,7 +765,7 @@ export const tsCloud: TsCloudConfig = {
         APP_NAME: 'ERBA Markets',
         APP_URL: 'erba.stacksjs.com',
         APP_KEY: env.APP_KEY || '',
-        PORT_API: '3078',
+        PORT_API: '3118',
         DB_CONNECTION: 'sqlite',
         DB_DATABASE_PATH: '/var/lib/erbamarkets/stacks.sqlite',
       },
@@ -773,7 +778,7 @@ export const tsCloud: TsCloudConfig = {
     api: {
       root: '.',
       start: 'bun node_modules/@stacksjs/actions/dist/serve/api.js',
-      port: 3078,
+      port: 3118,
       preStart: ['bun install'],
       env: {
         HOST: '127.0.0.1',
