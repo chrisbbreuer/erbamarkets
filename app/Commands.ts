@@ -29,4 +29,5 @@ export type CommandRegistry = Record<string, string | CommandConfig>
 export default {
   'inspire': 'Inspire',
   'seed:catalog': { file: 'SeedCatalog', aliases: ['catalog'] },
+  'dispatch': 'Dispatch',
 } satisfies CommandRegistry

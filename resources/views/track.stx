@@ -1,0 +1,296 @@
+@layout('erba')
+
+@section('title')Track your ERBA order@endsection
+
+@section('description')Follow your ERBA delivery from the shop to your door.@endsection
+
+@section('content')
+<script server>
+/**
+ * Customer delivery tracking.
+ *
+ * Reached as `/track?t=<trackingToken>` from the order confirmation and the
+ * "on its way" text. There is no sign-in: possession of the token is the
+ * authorisation, which is why the token is 32 random characters and why the
+ * server hands back only what a map needs.
+ *
+ * The page renders whatever the API knows at request time so it is useful
+ * before any script runs, then the client subscribes to the order's channel
+ * and moves the marker from there.
+ */
+const brandName = 'ERBA Markets'
+</script>
+
+<script client>
+/**
+ * Live position, three sources in order of preference.
+ *
+ * 1. The realtime channel. A driver's device reports every few seconds and
+ *    that is the whole point of the page.
+ * 2. A poll of the same endpoint the page was rendered from, every 20s, as
+ *    the fallback when the socket cannot connect. A tracking page that stops
+ *    updating is bad; one that never updates is broken.
+ * 3. The server-rendered payload, so the first paint already has a map.
+ *
+ * The marker is moved by writing CSS custom properties and calling into
+ * MapLibre directly. Position is deliberately NOT kept in a signal: a fix
+ * arrives several times a minute and re-running the reactive tree on each one
+ * to move one marker is the wrong trade.
+ */
+const token = useSearchParams().t || ''
+
+const loading = state(true)
+const notFound = state(false)
+const orderStatus = state('')
+const driverName = state('')
+const driverVehicle = state('')
+const etaLabel = state('')
+const stopStatus = state('')
+const destinationAddress = state('')
+const lastUpdate = state('')
+const live = state(false)
+
+/** The three states the header can be in, in the customer's words. */
+const headline = derived(() => {
+  if (notFound()) return 'We could not find that order'
+  if (stopStatus() === 'completed') return 'Delivered'
+  if (stopStatus() === 'arrived') return 'Your driver is outside'
+  if (stopStatus() === 'en_route') return 'On the way'
+  if (orderStatus() === 'PENDING' || orderStatus() === 'PROCESSING') return 'We are packing your order'
+  return 'Getting ready'
+})
+
+let map = null
+let driverMarker = null
+let destinationMarker = null
+let socket = null
+let pollTimer = null
+
+function minutesFromNow(iso) {
+  if (!iso) return ''
+  const ms = new Date(iso).getTime() - Date.now()
+  if (!Number.isFinite(ms)) return ''
+  const minutes = Math.max(1, Math.round(ms / 60000))
+  return `${minutes} min`
+}
+
+function relativeTime(iso) {
+  if (!iso) return ''
+  const seconds = Math.round((Date.now() - new Date(iso).getTime()) / 1000)
+  if (!Number.isFinite(seconds)) return ''
+  if (seconds < 10) return 'just now'
+  if (seconds < 60) return `${seconds}s ago`
+  return `${Math.round(seconds / 60)} min ago`
+}
+
+async function loadMap(destination) {
+  if (map || !destination || destination.latitude == null) return
+
+  const maplibre = await import('/assets/maplibre/maplibre-gl.mjs')
+  const gl = maplibre.default ?? maplibre
+
+  map = new gl.Map({
+    container: 'delivery-map',
+    // Raster OSM rather than a keyed vector provider: the page works out of
+    // the box with no account. Swap in a vector style for production volume.
+    style: {
+      version: 8,
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '&copy; OpenStreetMap contributors',
+        },
+      },
+      layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+    },
+    center: [destination.longitude, destination.latitude],
+    zoom: 13,
+    attributionControl: { compact: true },
+  })
+
+  const pin = document.createElement('div')
+  pin.className = 'map-pin map-pin--home'
+  destinationMarker = new gl.Marker({ element: pin })
+    .setLngLat([destination.longitude, destination.latitude])
+    .addTo(map)
+}
+
+async function moveDriver(driver) {
+  if (!map || !driver || driver.latitude == null) return
+
+  const maplibre = await import('/assets/maplibre/maplibre-gl.mjs')
+  const gl = maplibre.default ?? maplibre
+
+  if (!driverMarker) {
+    const el = document.createElement('div')
+    el.className = 'map-pin map-pin--driver'
+    driverMarker = new gl.Marker({ element: el }).setLngLat([driver.longitude, driver.latitude]).addTo(map)
+  }
+  else {
+    driverMarker.setLngLat([driver.longitude, driver.latitude])
+  }
+
+  if (typeof driver.heading === 'number')
+    driverMarker.getElement().style.setProperty('--heading', `${driver.heading}deg`)
+
+  // Keep both the driver and the door in frame without fighting a customer
+  // who has panned the map themselves.
+  if (destinationMarker) {
+    const bounds = new gl.LngLatBounds(destinationMarker.getLngLat(), destinationMarker.getLngLat())
+    bounds.extend([driver.longitude, driver.latitude])
+    map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 900 })
+  }
+}
+
+function applyState(data) {
+  if (!data) return
+
+  orderStatus.set(data.order?.status ?? '')
+  stopStatus.set(data.stop?.status ?? '')
+  destinationAddress.set(data.destination?.address ?? '')
+  etaLabel.set(minutesFromNow(data.stop?.etaAt))
+  driverName.set(data.driver?.name ?? '')
+  driverVehicle.set(data.driver?.vehicle ?? '')
+  lastUpdate.set(relativeTime(data.driver?.lastPingAt))
+  live.set(Boolean(data.driver))
+
+  void loadMap(data.destination)
+  void moveDriver(data.driver)
+}
+
+async function fetchState() {
+  if (!token) {
+    notFound.set(true)
+    loading.set(false)
+    return null
+  }
+
+  try {
+    const res = await fetch(`/api/delivery/track/${encodeURIComponent(token)}`)
+    if (!res.ok) {
+      notFound.set(true)
+      return null
+    }
+
+    const body = await res.json()
+    const data = body?.data ?? body
+    applyState(data)
+    return data
+  }
+  catch {
+    // Leave whatever is on screen. A transient network blip should not blank
+    // a page the customer is watching.
+    return null
+  }
+  finally {
+    loading.set(false)
+  }
+}
+
+function subscribe(channel) {
+  if (!channel || socket) return
+
+  const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
+  socket = useWebSocket(`${scheme}://${location.host}/ws`, {
+    immediate: true,
+    autoReconnect: { retries: 6, delay: 2000 },
+    onConnected(ws) {
+      ws.send(JSON.stringify({ event: 'subscribe', channel, token }))
+    },
+    onMessage(_ws, message) {
+      let frame = null
+      try { frame = JSON.parse(message.data) }
+      catch { return }
+
+      if (frame?.channel !== channel) return
+
+      if (frame.event === 'delivery:position') {
+        void moveDriver(frame.data)
+        lastUpdate.set('just now')
+        if (typeof frame.data?.etaSeconds === 'number')
+          etaLabel.set(`${Math.max(1, Math.round(frame.data.etaSeconds / 60))} min`)
+        return
+      }
+
+      // Any lifecycle change reloads the whole payload rather than patching
+      // half of it: these are rare, and a correct page beats a fast one.
+      void fetchState()
+    },
+  })
+}
+
+onMount(async () => {
+  const data = await fetchState()
+  if (data?.channel) subscribe(data.channel)
+
+  // The poll is the fallback, not the primary: 20s is often enough to keep a
+  // map honest and rare enough not to matter when the socket is healthy.
+  pollTimer = setInterval(() => { void fetchState() }, 20000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+  socket?.close?.()
+  map?.remove?.()
+})
+</script>
+
+<template>
+  <div data-stx-content>
+    <link rel="stylesheet" href="/assets/maplibre/maplibre-gl.css">
+
+    <header class="nav">
+      <div class="nav-inner">
+        <a href="/" class="wordmark">Erba</a>
+        <div class="nav-actions">
+          <a href="/#menu" class="btn btn-ghost btn-small">Order again</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="track">
+      <section class="track-panel">
+        <p class="eyebrow" :if="live()">Live</p>
+        <h1>{{ headline() }}</h1>
+
+        <p class="track-eta" :if="etaLabel() && stopStatus() === 'en_route'">
+          Arriving in about <strong>{{ etaLabel() }}</strong>
+        </p>
+        <p class="track-eta" :if="stopStatus() === 'arrived'">
+          Your driver is at the door. Have your ID ready.
+        </p>
+        <p class="track-eta" :if="stopStatus() === 'completed'">
+          Handed over. Thanks for shopping with us.
+        </p>
+        <p class="track-eta" :if="loading()">Looking up your order.</p>
+
+        <dl class="track-rows">
+          <div class="track-row" :if="destinationAddress()">
+            <dt>Delivering to</dt>
+            <dd>{{ destinationAddress() }}</dd>
+          </div>
+          <div class="track-row" :if="driverName()">
+            <dt>Driver</dt>
+            <dd>{{ driverName() }}<span :if="driverVehicle()">, {{ driverVehicle() }}</span></dd>
+          </div>
+          <div class="track-row" :if="lastUpdate()">
+            <dt>Position</dt>
+            <dd class="mono">{{ lastUpdate() }}</dd>
+          </div>
+        </dl>
+
+        <div class="track-help" :if="notFound()">
+          <p>That tracking link did not match an order. Check the link in your confirmation, or call the store.</p>
+          <a href="tel:+13102071900" class="btn btn-ghost btn-small">Call West LA</a>
+        </div>
+
+        <p class="track-legal">Deliveries are handed to the person who placed the order, on presentation of valid ID showing 21 or older.</p>
+      </section>
+
+      <div class="track-map" id="delivery-map" aria-label="Map showing your delivery"></div>
+    </main>
+  </div>
+</template>
+@endsection

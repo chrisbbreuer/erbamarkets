@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "orders_tracking_token_unique" ON "orders" ("tracking_token");

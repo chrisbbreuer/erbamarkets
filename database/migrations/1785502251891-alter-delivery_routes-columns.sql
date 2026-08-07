@@ -1,0 +1,3 @@
+ALTER TABLE "delivery_routes" ADD COLUMN "status" TEXT CHECK ("status" IN ('planned', 'active', 'completed', 'cancelled')) default 'planned';
+ALTER TABLE "delivery_routes" ADD COLUMN "started_at" TEXT;
+ALTER TABLE "delivery_routes" ADD COLUMN "completed_at" TEXT;
