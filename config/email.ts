@@ -14,7 +14,15 @@ export default {
     address: env.MAIL_FROM_ADDRESS || `hello@${env.MAIL_DOMAIN || 'stacksjs.com'}`,
   },
 
-  domain: env.MAIL_DOMAIN || 'stacksjs.com',
+  /**
+   * This app's own mail domain, NOT the box owner's.
+   *
+   * It inherited `stacksjs.com` from the template, which meant a deploy from
+   * this tenant reconciled the PARENT domain's MX, SPF and DMARC records — a
+   * demo storefront rewriting the mail DNS of the domain hosting it. Scoped to
+   * its own subdomain so a tenant deploy can only ever touch its own records.
+   */
+  domain: env.MAIL_DOMAIN || 'erba.stacksjs.com',
 
   /**
    * Mailbox users for IMAP/SMTP access.
