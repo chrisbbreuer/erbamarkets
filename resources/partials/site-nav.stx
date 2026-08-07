@@ -1,0 +1,155 @@
+{{--
+  The site header, shared by the storefront and the menu page.
+
+  This is an @include rather than a component on purpose: it needs the bag
+  signals (bagOpen, bagCount) and the catalog view models (navCategories,
+  navBrands, navFeature) that each page already builds server-side, and an
+  include keeps the page's own scope instead of plumbing eight props through.
+
+  Each including page declares `megaOpen` in its client script.
+--}}
+<header class="nav">
+  <div class="nav-inner">
+    <a href="/" class="wordmark">Erba</a>
+
+    <nav class="nav-links" aria-label="Primary">
+      {{--
+        The mega menu hangs off Menu because that is the only nav item with
+        enough behind it to justify a panel: six categories, the brands we
+        carry, and something to look at. The rest stay plain links.
+
+        @mouseleave on the wrapper rather than the panel, so crossing the gap
+        between trigger and panel does not close it.
+      --}}
+      <div
+        class="mega"
+        @mouseenter="megaOpen.set(true)"
+        @mouseleave="megaOpen.set(false)"
+        @keydown.escape="megaOpen.set(false)"
+      >
+        <button
+          type="button"
+          class="mega-trigger"
+          aria-haspopup="true"
+          :aria-expanded="megaOpen() ? 'true' : 'false'"
+          aria-controls="mega-menu"
+          @click="megaOpen.set(!megaOpen())"
+        >
+          Menu
+          <svg class="mega-caret" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+
+        <div id="mega-menu" class="mega-panel" :hidden="!megaOpen()">
+          <div class="mega-inner">
+            {{--
+              @foreach, not :for. `:for` is a client-side reactive loop and
+              these are server consts, so a `:for` here renders an empty
+              column and ships the raw template to the browser.
+            --}}
+            <div class="mega-col">
+              <h3>Shop by category</h3>
+              <ul class="mega-list">
+                @foreach (navCategories as category)
+                  <li>
+                    <a href="/menu?category={{ category.slug }}">
+                      <span>{{ category.name }}</span>
+                      <span class="count">{{ category.count }}</span>
+                    </a>
+                  </li>
+                @endforeach
+              </ul>
+            </div>
+
+            <div class="mega-col">
+              <h3>Shop by brand</h3>
+              <ul class="mega-list">
+                @foreach (navBrands as brand)
+                  <li>
+                    <a href="/menu?brand={{ brand.query }}">
+                      <span>{{ brand.name }}</span>
+                      <span class="count">{{ brand.count }}</span>
+                    </a>
+                  </li>
+                @endforeach
+              </ul>
+            </div>
+
+            <div class="mega-col">
+              <h3>Ways to buy</h3>
+              <ul class="mega-list">
+                <li><a href="/menu"><span>Full menu</span></a></li>
+                <li><a href="/menu?sort=price-asc"><span>Lowest price</span></a></li>
+                <li><a href="/menu?featured=1"><span>Staff picks</span></a></li>
+                <li><a href="/#specials"><span>Weekly deals</span></a></li>
+                <li><a href="/#delivery"><span>Delivery</span></a></li>
+                <li><a href="/#locations"><span>Pickup</span></a></li>
+              </ul>
+              <p class="mega-sub">Free delivery over {{ navDeliveryMinimum }} across West LA, 10AM to 8PM.</p>
+            </div>
+
+            @if (navFeature)
+              <a class="mega-feature" href="/menu?category={{ navFeature.category }}">
+                <h3 class="sr-only">Featured</h3>
+                <div class="mega-feature-media">
+                  <img src="{{ navFeature.image }}" alt="{{ navFeature.name }}" width="600" height="450" loading="lazy" decoding="async">
+                </div>
+                <div class="mega-feature-body">
+                  <div>
+                    <h4>{{ navFeature.name }}</h4>
+                    <p class="mega-sub">{{ navFeature.brand }}</p>
+                  </div>
+                  <span class="mono">{{ navFeature.price }}</span>
+                </div>
+              </a>
+            @endif
+          </div>
+
+          <div class="mega-foot">
+            <div class="mega-foot-inner">
+              <span>{{ navProductCount }} products in stock today</span>
+              <a href="/menu">Browse the full menu</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="/#specials">Specials</a>
+      <a href="/#locations">Locations</a>
+      <a href="/#delivery">Delivery</a>
+      <a href="/#story">Story</a>
+    </nav>
+
+    <div class="nav-actions">
+      {{--
+        id="theme-toggle" is the contract with stx: its pre-paint guard binds
+        the click, flips `.dark` on <html>, persists it and re-asserts on SPA
+        hops. No handler here on purpose - a second one would fight it.
+
+        The label names where the next click goes, not the current state.
+      --}}
+      <button
+        type="button"
+        id="theme-toggle"
+        class="theme-toggle"
+        aria-label="Switch between light and dark theme"
+        title="Switch theme"
+      >
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6" />
+          <path d="M12 2.4v2.3M12 19.3v2.3M4.2 12H1.9M22.1 12h-2.3M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <button type="button" class="bag-button" @click="bagOpen.set(true)">
+        Bag
+        <span class="bag-count mono" :if="bagCount() > 0">{{ bagCount() }}</span>
+      </button>
+      <a href="/menu" class="btn btn-primary btn-small">Order online</a>
+    </div>
+  </div>
+</header>

@@ -14,9 +14,6 @@ declare global {
   const decrement: typeof autoImports.decrement
   const reset: typeof autoImports.reset
   const count: typeof autoImports.count
-  const toggleDark: typeof autoImports.toggleDark
-  const isDark: typeof autoImports.isDark
-  const preferredDark: typeof autoImports.preferredDark
 }
 
 export {}

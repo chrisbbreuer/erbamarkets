@@ -72,6 +72,42 @@ const products = productRows.map(row => ({
 
 const brands = brandRows.map(row => row.manufacturer)
 
+/*
+ * Mega menu model.
+ *
+ * A pure transform of what this page already queried, so the nav costs no
+ * extra round trips. The menu page derives the same shape from its own rows;
+ * `partials/site-nav` reads these five names and nothing else.
+ *
+ * Counts are real. A category with nothing in stock is dropped rather than
+ * shown as a dead link with a zero next to it.
+ */
+const countBy = (key) => products.reduce((acc, product) => {
+  acc[product[key]] = (acc[product[key]] || 0) + 1
+  return acc
+}, {})
+
+const productsPerCategory = countBy('category')
+const navCategories = categories
+  .filter(category => productsPerCategory[category.slug] > 0)
+  .map(category => ({ ...category, count: productsPerCategory[category.slug] }))
+
+const productsPerBrand = countBy('brand')
+const navBrands = Object.entries(productsPerBrand)
+  .filter(([name]) => name)
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .slice(0, 6)
+  // `query` is encoded here rather than in the template, because interpolation
+  // has no function calls available to it.
+  .map(([name, count]) => ({ name, count, query: encodeURIComponent(name) }))
+
+// Featured picks itself: the first flagged product that actually has a photo,
+// because the panel gives it a 4:3 frame and an empty one looks broken.
+const navFeature = products.find(product => product.image) || null
+const navProductCount = products.length
+// Read off `stores` rather than `westla`, which is declared further down.
+const navDeliveryMinimum = (stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]).deliveryMinimum
+
 const specialRows = await Special.where('is_active', true).get()
 const dayOrder = [1, 2, 3, 4, 5, 6, 0]
 const specials = specialRows
@@ -174,6 +210,10 @@ function acceptAge() {
 }
 
 const activeCategory = state('all')
+
+// Read by partials/site-nav. The theme toggle needs no state here: stx's own
+// pre-paint guard owns that, and a second owner would fight it.
+const megaOpen = state(false)
 
 const bagToken = useLocalStorage('erba-bag-token', '')
 const bagOpen = state(false)
@@ -355,7 +395,7 @@ onMount(() => {
     <div data-stx-content>
     <script type="application/ld+json">{!! jsonLd !!}</script>
     <!-- California requires an age check before anyone sees a menu. -->
-    <div class="gate" :if="gateOpen()" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <div class="gate on-media" :if="gateOpen()" role="dialog" aria-modal="true" aria-labelledby="gate-title">
       <div class="gate-card">
         <p class="eyebrow">Welcome to ERBA</p>
         <h2 id="gate-title" style="margin-top: 1.25rem;">Are you 21 or older?</h2>
@@ -369,28 +409,10 @@ onMount(() => {
       </div>
     </div>
 
-    <header class="nav">
-      <div class="nav-inner">
-        <a href="#top" class="wordmark">Erba</a>
-        <nav class="nav-links" aria-label="Primary">
-          <a href="#menu">Menu</a>
-          <a href="#specials">Specials</a>
-          <a href="#locations">Locations</a>
-          <a href="#delivery">Delivery</a>
-          <a href="#story">Story</a>
-        </nav>
-        <div class="nav-actions">
-          <button type="button" class="bag-button" @click="bagOpen.set(true)">
-            Bag
-            <span class="bag-count mono" :if="bagCount() > 0">{{ bagCount() }}</span>
-          </button>
-          <a href="#menu" class="btn btn-primary btn-small">Order online</a>
-        </div>
-      </div>
-    </header>
+    @include('site-nav')
 
     <main id="top">
-      <section class="hero">
+      <section class="hero on-media">
         <div class="hero-media">
           <img src="/images/erba/hero-inside.jpg" alt="Inside the ERBA dispensary on Sawtelle" width="1600" height="1067" fetchpriority="high" decoding="async">
         </div>
@@ -435,7 +457,7 @@ onMount(() => {
               <article class="card" data-cat="{{ product.category }}">
                 <div class="card-media">
                   <img src="{{ product.image }}" alt="{{ product.name }} by {{ product.brand }}" width="900" height="1100" loading="lazy" decoding="async">
-                  <span class="card-strain">{{ product.strain }}</span>
+                  <span class="card-strain on-media">{{ product.strain }}</span>
                 </div>
                 <p class="card-brand">{{ product.brand }} {{ product.brandLine }}</p>
                 <h3>{{ product.name }}</h3>
@@ -544,7 +566,7 @@ onMount(() => {
 
           <div class="bento">
             @foreach (deliveryFacts as fact)
-              <article class="fact reveal {{ fact.tone === 'accent' ? 'fact--accent' : '' }} {{ fact.tone === 'tint' ? 'fact--tint' : '' }} {{ fact.image ? 'fact--image' : '' }}">
+              <article class="fact reveal {{ fact.tone === 'accent' ? 'fact--accent' : '' }} {{ fact.tone === 'tint' ? 'fact--tint' : '' }} {{ fact.image ? 'fact--image on-media' : '' }}">
                 @if (fact.image)
                   <img src="{{ fact.image }}" alt="" width="900" height="700" loading="lazy" decoding="async">
                 @endif
