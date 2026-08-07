@@ -145,7 +145,7 @@
 
         /*
          * Re-assert `color`, not just the variables. `color` inherits as a
-         * computed value from the body element, so a heading with no rule of its
+         * computed value from <body>, so a heading with no rule of its own keeps
          * own keeps the page theme's ink no matter what --paper-rgb says here.
          * In light mode that put near-black type on a dark photograph.
          */

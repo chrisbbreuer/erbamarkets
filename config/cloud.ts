@@ -757,6 +757,11 @@ export const tsCloud: TsCloudConfig = {
         'bun build --production --target=bun --packages=external app/ProductionServer.ts --outdir storage/framework/runtime/production --entry-naming serve.js',
         'bun node_modules/@stacksjs/buddy/dist/cli.js migrate || true',
         'bun node_modules/@stacksjs/buddy/dist/cli.js seed:catalog',
+        // Reindex whatever seed:catalog just wrote, so the menu and the search
+        // index cannot drift. Tolerates failure on purpose: the search route
+        // falls back to the database, so a Typesense hiccup degrades search
+        // rather than failing the deploy.
+        'bun node_modules/@stacksjs/buddy/dist/cli.js menu:index || true',
       ],
       env: {
         HOST: '127.0.0.1',
@@ -768,6 +773,14 @@ export const tsCloud: TsCloudConfig = {
         PORT_API: '3118',
         DB_CONNECTION: 'sqlite',
         DB_DATABASE_PATH: '/var/lib/erbamarkets/stacks.sqlite',
+        // Typesense runs on the box already, installed and service-managed by
+        // pantry, bound to loopback. The key is scoped to the erba_products
+        // collection: that instance is shared with other tenants, so the admin
+        // key must never reach this app.
+        TYPESENSE_HOST: '127.0.0.1',
+        TYPESENSE_PORT: '8108',
+        TYPESENSE_PROTOCOL: 'http',
+        TYPESENSE_API_KEY: env.TYPESENSE_API_KEY_PROD || '',
       },
     },
 
@@ -789,6 +802,14 @@ export const tsCloud: TsCloudConfig = {
         APP_KEY: env.APP_KEY || '',
         DB_CONNECTION: 'sqlite',
         DB_DATABASE_PATH: '/var/lib/erbamarkets/stacks.sqlite',
+        // Typesense runs on the box already, installed and service-managed by
+        // pantry, bound to loopback. The key is scoped to the erba_products
+        // collection: that instance is shared with other tenants, so the admin
+        // key must never reach this app.
+        TYPESENSE_HOST: '127.0.0.1',
+        TYPESENSE_PORT: '8108',
+        TYPESENSE_PROTOCOL: 'http',
+        TYPESENSE_API_KEY: env.TYPESENSE_API_KEY_PROD || '',
       },
     },
   },
