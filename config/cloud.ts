@@ -40,8 +40,14 @@ export const tsCloud: TsCloudConfig = {
   stateDir: 'storage/cloud',
 
   // Deploy compute to Hetzner Cloud (apiToken falls back to HCLOUD_TOKEN env).
+  // This project does NOT own a server. It attaches to the shared Hetzner box
+  // owned by the `stacks` project: the deploy targets `stacks-production-app`,
+  // ships only the sites below, and adds an additive rpx gateway fragment at
+  // /etc/rpx/sites.d/erbamarkets.json. The owner keeps managing the box, the
+  // firewall and TLS.
   cloud: {
     provider: 'hetzner',
+    attachTo: 'stacks',
   },
 
   /**
@@ -711,127 +717,63 @@ export const tsCloud: TsCloudConfig = {
    * static `/` site for stacksjs.com or it will compete with the app route.
    */
   sites: {
+    // The stx app server (`buddy serve`): renders the storefront and the
+    // tracking page, and proxies /api to the loopback API below. The SQLite
+    // database lives OUTSIDE the atomic release directories (/var/lib/erbamarkets)
+    // so the catalog, carts and orders survive a deploy.
     main: {
-      // Ship the repo (source only; node_modules/.git excluded by the packager)
-      // and install on the server via preStart, matching the Forge-style deploy.
-      // server-app: has `start` + `port` (systemd service on :3000).
       root: '.',
       path: '/',
-      domain: env.APP_DOMAIN || 'stacksjs.com',
-      // The deploy builds a dedicated, minified production entry. This keeps
-      // Buddy's general-purpose command dispatcher out of the long-running
-      // web process while preserving source-based workspace resolution only
-      // during the build step.
+      domain: 'erba.stacksjs.com',
+      // ts-cloud prepends the runtime, so this has to be a file bun can
+      // execute — not the ./buddy shell wrapper.
       start: 'bun storage/framework/runtime/production/serve.js',
-      port: 3000,
-      // preStart runs (in order) after the repo is shipped + the resolved
-      // production env is in place, before the systemd service starts.
-      //   1. install deps
-      //   2. migrate the database (stacksjs/stacks#1950) — without this a fresh
-      //      box served the API against a schema-less / stale-dev SQLite file.
-      //
-      // Migrate runs ONLY on `main`, the single DB owner. Migration remains a
-      // short-lived CLI task. No `--force`: additive migrations
-      // apply on every deploy (a no-op when none pend). A *destructive*
-      // change is refused in this
-      // non-interactive context — migrate logs the refusal and skips it
-      // (leaving prod data intact) rather than dropping columns/tables
-      // unattended; apply those deliberately with `--force`.
-      //
-      // `main` and `api` DO share one database — but nothing in this file makes
-      // that true, and nothing here can break it. ts-cloud installs each site
-      // under its own base (`/var/www/<slug>-<site>`), so both sites opening
-      // `database/stacks.sqlite` used to mean two separate files with only this
-      // one ever migrated. The deploy now symlinks that path, for every
-      // server-app site, at one project-level file outside both release trees
-      // (`/var/www/<slug>-shared/…`, see applyPersistentStatePaths), and only
-      // the migrating site may create or seed it.
+      port: 3070,
+      // Runs after the repo and the resolved production env are in place and
+      // before the systemd service starts. Migrate runs ONLY here: the API
+      // site shares the same SQLite file, so migrating from both would put two
+      // writers on one file. `seed:catalog` upserts, so it is safe to re-run
+      // against a database that already has orders in it.
       preStart: [
         'bun install',
+        'mkdir -p /var/lib/erbamarkets',
         'mkdir -p storage/framework/runtime/production',
-        'bun build --production --splitting --conditions=development --target=bun --external=localtunnels --external=localtunnels/cloud --external=@stacksjs/bun-queue --external=meilisearch storage/framework/core/buddy/src/serve-entry.ts --outdir storage/framework/runtime/production --entry-naming serve.js --chunk-naming chunks/[name]-[hash].js',
-        'bun --conditions development storage/framework/core/buddy/src/cli.ts migrate',
+        'bun build --production --target=bun --packages=external app/ProductionServer.ts --outdir storage/framework/runtime/production --entry-naming serve.js',
+        'bun node_modules/@stacksjs/buddy/dist/cli.js migrate || true',
+        'bun node_modules/@stacksjs/buddy/dist/cli.js seed:catalog',
       ],
-      env: { APP_ENV: 'production', NODE_ENV: 'production' },
+      env: {
+        HOST: '127.0.0.1',
+        APP_ENV: 'production',
+        NODE_ENV: 'production',
+        APP_NAME: 'ERBA Markets',
+        APP_URL: 'erba.stacksjs.com',
+        APP_KEY: env.APP_KEY || '',
+        PORT_API: '3078',
+        DB_CONNECTION: 'sqlite',
+        DB_DATABASE_PATH: '/var/lib/erbamarkets/stacks.sqlite',
+      },
     },
 
-    // API (bun-router) behind `buddy serve`'s same-origin /api proxy.
-    // server-app: has `start` + `port` → systemd service on :3008.
-    // Intentionally NO `domain`/`path`: ts-cloud's rpx gateway skips
-    // domain-less sites, so the service stays loopback-only and is
-    // reached exclusively via the :3000 proxy (stacksjs/stacks#1950).
-    // Loopback isolation is enforced at the firewall too: the Hetzner
-    // deploy strips this port from the provision config
-    // (scrubLoopbackSitePortsForFirewall in buddy's deploy command), so
-    // ts-cloud never opens :3008 to 0.0.0.0/0 — without that, the
-    // HOST=127.0.0.1 bind below would be the only thing keeping the full
-    // API off the public internet.
+    // API (bun-router): the bag, checkout and delivery endpoints.
+    // Intentionally NO `domain`/`path` — the rpx gateway skips domain-less
+    // sites, so this stays loopback-only and is reached exclusively through
+    // the app's same-origin /api proxy.
     api: {
       root: '.',
-      start: 'bun storage/framework/runtime/production/api.js',
-      port: 3008,
-      preStart: [
-        'bun install',
-        'mkdir -p storage/framework/runtime/production',
-        // Cors middleware is loaded from the app override tree at runtime and
-        // imports the router by package name. Keep that package external so
-        // the API and middleware share one router instance instead of retaining
-        // a second copy inside a split chunk. Without splitting, Bun emits one
-        // small entry and avoids duplicate output paths from prebuilt packages.
-        'bun build --production --conditions=development --target=bun --external=localtunnels --external=localtunnels/cloud --external=@stacksjs/router --external=@stacksjs/bun-queue --external=meilisearch storage/framework/core/actions/src/serve/api.ts --outdir storage/framework/runtime/production --entry-naming api.js',
-      ],
-      env: { HOST: '127.0.0.1', APP_ENV: 'production', NODE_ENV: 'production' },
-    },
-
-    // ---- server-static sites (migrated off AWS S3 + CloudFront) ----
-    // NO `start`/`port` ⇒ resolveSiteKind() === 'server-static'. The built
-    // `root` dir is shipped to /var/www/<key> and served by the reverse proxy's
-    // `file_server`. `build` runs locally before packaging to produce `root`.
-
-    // Documentation (BunPress). ~82 MB.
-    // BunPress writes the rendered site into the `.bunpress` subdir of --outdir,
-    // so the SERVED root is `dist/docs/.bunpress`.
-    docs: {
-      deploy: 'server',
-      root: 'dist/docs/.bunpress',
-      path: '/docs',
-      domain: env.APP_DOMAIN || 'stacksjs.com',
-      build: 'bunx @stacksjs/bunpress build --dir ./docs --outdir ./dist/docs',
-      // Extensionless docs URLs resolve to <path>/index.html (BunPress default).
-      pathRewriteStyle: 'directory',
-    },
-
-    // Blog (BunPress static build of content/blog/, same engine as /docs).
-    // `buildBlog` renders the markdown posts with the custom Stacks theme into
-    // clean-URL pages (`<slug>/index.html`) plus the listing, feed.xml, and
-    // sitemap.xml — the static twin of the dev-server's onRequest renderer.
-    blog: {
-      deploy: 'server',
-      root: 'dist/blog',
-      path: '/blog',
-      domain: env.APP_DOMAIN || 'stacksjs.com',
-      build: 'bun -e "const {buildBlog}=await import(\'./storage/framework/core/actions/src/blog\'); await buildBlog({outDir:\'./dist/blog\', baseUrl: (process.env.APP_URL?(/^https?:/.test(process.env.APP_URL)?process.env.APP_URL:\'https://\'+process.env.APP_URL):\'https://stacksjs.com\')})"',
-      // Extensionless blog URLs resolve to <path>/index.html.
-      pathRewriteStyle: 'directory',
-    },
-
-    // Redirect-only sites (gateway answers with a 301; nothing is shipped).
-    // The alternate adblock domain → canonical, and www → apex for stacksjs.com.
-    wwwStacksjs: { domain: 'www.stacksjs.com', redirect: 'https://stacksjs.com' },
-
-    // Vanity invite link. Every README/doc links the community as
-    // stacksjs.com/discord so the invite code lives in exactly one place (here)
-    // and can be rotated without touching thousands of markdown files.
-    //
-    // This is a path-scoped redirect route on the apex domain: the gateway
-    // resolves longest-prefix-first, so `/discord` wins over the `main` app's
-    // `/` route without competing with it. `preservePath: false` is required —
-    // the default appends the request path, which would send visitors to
-    // discord.gg/<invite>
-    discord: {
-      domain: env.APP_DOMAIN || 'stacksjs.com',
-      path: '/discord',
-      redirect: { to: 'https://discord.gg/gD8KTSzhBd', preservePath: false },
+      start: 'bun node_modules/@stacksjs/actions/dist/serve/api.js',
+      port: 3078,
+      preStart: ['bun install'],
+      env: {
+        HOST: '127.0.0.1',
+        APP_ENV: 'production',
+        NODE_ENV: 'production',
+        APP_NAME: 'ERBA Markets',
+        APP_URL: 'erba.stacksjs.com',
+        APP_KEY: env.APP_KEY || '',
+        DB_CONNECTION: 'sqlite',
+        DB_DATABASE_PATH: '/var/lib/erbamarkets/stacks.sqlite',
+      },
     },
   },
 }
