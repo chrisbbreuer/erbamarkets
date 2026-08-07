@@ -1,4 +1,5 @@
 import { commerce } from '@stacksjs/commerce'
+import { log } from '@stacksjs/logging'
 import { response, route } from '@stacksjs/router'
 import Cart from '../app/Models/Cart'
 import Store from '../app/Models/Store'
@@ -223,20 +224,32 @@ route.post('/vip', async (request: any) => {
  * "we could not find that address", "we do not deliver that far" and "our
  * address lookup is down" all need different words and different next steps.
  */
-async function locate(_query: Record<string, string | undefined>): Promise<{
+interface AddressQuery {
+  street: string
+  unit?: string
+  city?: string
+  region?: string
+  postalCode?: string
+  country?: string
+}
+
+interface LocateResult {
   result: { latitude: number, longitude: number, formatted: string } | null
   error: string
-}> {
+}
+
+async function locate(query: AddressQuery): Promise<LocateResult> {
   const { geocoding } = commerce.shippings
 
   let located
   try {
-    located = await geocoding.geocode(query as any)
+    located = await geocoding.geocode(query)
   }
-  catch {
+  catch (error) {
     // The provider is unreachable. Refusing the order would lose a sale over
     // someone else's outage, so take it and let dispatch resolve the address
     // by hand; the driver has the phone number either way.
+    log.warn(`[checkout] address lookup failed, accepting the order anyway: ${error instanceof Error ? error.message : String(error)}`)
     return { result: null, error: '' }
   }
 
