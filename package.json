@@ -73,9 +73,8 @@
     "stx": "./buddy"
   },
   "dependencies": {
-    "@stacksjs/commerce": "0.70.296",
     "maplibre-gl": "^6.2.0",
-    "stacks": "^0.70.294"
+    "stacks": "^0.70.298"
   },
   "workspaces": [
     "storage/framework",
