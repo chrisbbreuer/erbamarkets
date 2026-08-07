@@ -434,7 +434,18 @@
 
       /* ---------- delivery tracking ---------- */
       .track { display: grid; min-height: calc(100dvh - 72px); }
-      @media (min-width: 900px) { .track { grid-template-columns: minmax(360px, 34%) 1fr; } }
+      /*
+       * `grid-template-rows` is doing real work here. Without it the single
+       * row is content-sized, the container's min-height leaves slack the row
+       * never claims, and the map cell resolves to zero height: MapLibre
+       * initialises into a 0px box and paints nothing.
+       */
+      @media (min-width: 900px) {
+        .track {
+          grid-template-columns: minmax(360px, 34%) 1fr;
+          grid-template-rows: minmax(0, 1fr);
+        }
+      }
 
       .track-panel { padding: clamp(2rem, 5vw, 3.5rem) clamp(1.5rem, 4vw, 3rem); display: flex; flex-direction: column; gap: 1.5rem; border-right: 1px solid var(--faint); }
       .track-panel h1 { font-size: clamp(2rem, 4vw, 3rem); text-transform: uppercase; }
@@ -455,7 +466,9 @@
        * page's palette rather than left glowing white inside a dark shell.
        */
       .track-map { min-height: 55vh; background: var(--ink-raised); filter: grayscale(0.45) brightness(0.72) contrast(1.05); }
-      @media (min-width: 900px) { .track-map { min-height: auto; } }
+      @media (min-width: 900px) { .track-map { min-height: 420px; height: 100%; } }
+
+      .track-map-fallback { padding: 2rem; color: var(--muted); max-width: 34ch; }
 
       .map-pin { width: 22px; height: 22px; border-radius: 999px; }
       .map-pin--home { background: var(--paper); border: 3px solid var(--ink); box-shadow: 0 0 0 2px var(--paper); }
