@@ -20,9 +20,20 @@ export const tsCloud: TsCloudConfig = {
   /**
    * Project configuration
    */
+  /*
+   * This project's OWN identity, which is not the box owner's.
+   *
+   * It stayed `stacks` from the template, and the slug is what names the
+   * tenant's rpx gateway fragment (/etc/rpx/sites.d/<slug>.json) and its
+   * per-tenant systemd units. So deploying this app rewrote
+   * `/etc/rpx/sites.d/stacks.json` — the box owner's own fragment — replacing
+   * every stacksjs.com route with this one and taking the site down.
+   *
+   * A tenant's slug must be unique on the box it attaches to.
+   */
   project: {
-    name: 'stacks',
-    slug: 'stacks',
+    name: 'erbamarkets',
+    slug: 'erbamarkets',
     region: 'us-east-1', // Default AWS region
   },
 
