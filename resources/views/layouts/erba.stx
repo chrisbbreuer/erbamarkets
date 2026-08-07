@@ -54,7 +54,7 @@
        * old hardcoded rgba() values could not.
        *
        * stx owns the switch. `site.config.ts` declares the theme and stx puts
-       * a pre-paint guard on every page that toggles `.dark` on <html> and
+       * a pre-paint guard on every page that toggles `.dark` on the root and
        * binds #theme-toggle. Writing a second guard here would fight it and
        * lose on refresh, so this file only declares the two palettes.
        *
@@ -145,7 +145,7 @@
 
         /*
          * Re-assert `color`, not just the variables. `color` inherits as a
-         * computed value from <body>, so a heading with no colour rule of its
+         * computed value from the body element, so a heading with no rule of its
          * own keeps the page theme's ink no matter what --paper-rgb says here.
          * In light mode that put near-black type on a dark photograph.
          */
@@ -275,7 +275,7 @@
       /*
        * Theme toggle. One button, two icons, and the one that shows is the
        * theme you would get by clicking - so it reads as a destination rather
-       * than a status light. `.dark` is on <html>, so both icons can be
+       * than a status light. `.dark` sits on the root element, so both icons
        * switched with one selector and no client state.
        */
       .theme-toggle {

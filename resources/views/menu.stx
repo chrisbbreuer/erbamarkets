@@ -1,0 +1,421 @@
+@layout('erba')
+
+@section('title')Menu - ERBA Markets West Los Angeles@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('content')
+<script server>
+/**
+ * The full menu.
+ *
+ * Every product is server-rendered into the table below, so the page is
+ * complete for search engines and for anyone browsing without scripts, and so
+ * the first paint needs no round trip. The search box then replaces the rows
+ * from /api/menu/search, which is Typesense-backed.
+ *
+ * The filter dropdowns are built from what is actually in stock rather than
+ * from a fixed list, so the menu can never offer a filter that matches
+ * nothing.
+ */
+const pageDescription = 'The full ERBA Markets menu: flower, pre-rolls, cartridges, edibles, concentrates and wellness, with live prices and potency.'
+
+const money = (cents) => `$${(cents / 100).toFixed(2).replace(/\.00$/, '')}`
+
+/**
+ * Quote a brand name for use inside a client-side expression attribute.
+ *
+ * Brands carry spaces and apostrophes ("Kiva Confections", "Papa's Herb"), and
+ * dropping one into a hand-quoted string would end the string early and break
+ * the binding. JSON.stringify escapes it properly.
+ */
+const brandJson = (name) => JSON.stringify(String(name || ''))
+
+const storeRows = await Store.where('is_active', true).orderBy('display_order', 'asc').get()
+const stores = storeRows.map(row => ({
+  slug: row.slug,
+  shortName: row.short_name,
+  deliveryMinimum: money(row.delivery_minimum * 100),
+}))
+
+const categoryRows = await Category.where('is_active', true).orderBy('display_order', 'asc').get()
+const categories = categoryRows.map(row => ({ name: row.name, slug: row.slug, description: row.description }))
+
+const productRows = await Product.where('is_available', true).orderBy('is_featured', 'desc').get()
+const categorySlugById = new Map(categoryRows.map(row => [row.id, row.slug]))
+const categoryNameBySlug = new Map(categoryRows.map(row => [row.slug, row.name]))
+const brandRows = await Manufacturer.query().get()
+const brandNameById = new Map(brandRows.map(row => [row.id, row.manufacturer]))
+
+const products = productRows.map(row => ({
+  id: row.id,
+  name: row.name,
+  slug: row.slug,
+  description: row.description,
+  category: categorySlugById.get(row.category_id) || 'flower',
+  categoryName: categoryNameBySlug.get(categorySlugById.get(row.category_id)) || 'Flower',
+  brand: brandNameById.get(row.manufacturer_id) || '',
+  strain: row.strain_type || '',
+  unit: row.unit_size || '',
+  priceCents: row.price,
+  price: money(row.price),
+  wasPrice: row.compare_at_price > 0 ? money(row.compare_at_price) : '',
+  thc: row.thc_percentage ? `${Number(row.thc_percentage).toFixed(1)}%` : '',
+  thcValue: Number(row.thc_percentage || 0),
+  cbd: row.cbd_percentage ? `${Number(row.cbd_percentage).toFixed(1)}%` : '',
+  image: row.image_url,
+  rating: row.rating ? Number(row.rating).toFixed(1) : '',
+  featured: row.is_featured ? 1 : 0,
+}))
+
+/* Filter options, derived from stock rather than declared. */
+const strains = [...new Set(products.map(product => product.strain).filter(Boolean))].sort()
+const brandsInStock = [...new Set(products.map(product => product.brand).filter(Boolean))].sort()
+
+/* The shared header reads these five names. Same shape as the storefront. */
+const countBy = (key) => products.reduce((acc, product) => {
+  acc[product[key]] = (acc[product[key]] || 0) + 1
+  return acc
+}, {})
+
+const productsPerCategory = countBy('category')
+const navCategories = categories
+  .filter(category => productsPerCategory[category.slug] > 0)
+  .map(category => ({ ...category, count: productsPerCategory[category.slug] }))
+
+const productsPerBrand = countBy('brand')
+const navBrands = Object.entries(productsPerBrand)
+  .filter(([name]) => name)
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .slice(0, 6)
+  .map(([name, count]) => ({ name, count, query: encodeURIComponent(name) }))
+
+const navFeature = products.find(product => product.image) || null
+const navProductCount = products.length
+const navDeliveryMinimum = (stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]).deliveryMinimum
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  'name': 'ERBA Markets menu',
+  'numberOfItems': products.length,
+  'itemListElement': products.slice(0, 40).map((product, index) => ({
+    '@type': 'ListItem',
+    'position': index + 1,
+    'item': {
+      '@type': 'Product',
+      'name': product.name,
+      'brand': product.brand,
+      'offers': { '@type': 'Offer', 'price': (product.priceCents / 100).toFixed(2), 'priceCurrency': 'USD' },
+    },
+  })),
+})
+</script>
+
+<script client>
+/**
+ * Search runs against /api/menu/search, which is Typesense with a database
+ * fallback. It returns the ids that matched, and the page reveals exactly
+ * those rows.
+ *
+ * That is the whole design: every product is already in the HTML, so search
+ * and filtering reveal and hide rather than re-render. The catalog stays
+ * complete for search engines and for anyone without scripts, nothing flashes
+ * empty while a request is in flight, and the engine still does the matching
+ * it is good at - a misspelled brand finds the brand.
+ *
+ * `matchedIds` of null means "no search is active", which is different from a
+ * search that matched nothing.
+ */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+
+const query = state('')
+const activeCategory = state('all')
+const activeBrand = state('')
+const activeStrain = state('')
+const view = state('grid')
+
+const matchedIds = state(null)
+const searching = state(false)
+const engineUsed = state('')
+const searchFailed = state(false)
+
+/*
+ * Deep links from the mega menu arrive with the filter already chosen, so
+ * ?category=flower and ?brand=STIIIZY have to be honoured on load. Read them
+ * through the composable rather than touching window.location here.
+ *
+ * useSearchParams and useDebounce, not the useUrlSearchParams/useDebounceFn
+ * the auto-import manifest advertises: those two names are not in the stx
+ * runtime, and referencing one throws before any binding is applied, which
+ * takes the whole page's interactivity down with it.
+ */
+const params = useSearchParams()
+
+effect(() => {
+  // The composable hands back an accessor object, not a plain record.
+  if (params.get('category')) activeCategory.set(String(params.get('category')))
+  if (params.get('brand')) activeBrand.set(String(params.get('brand')))
+  if (params.get('strain')) activeStrain.set(String(params.get('strain')))
+  if (params.get('q')) {
+    query.set(String(params.get('q')))
+    runSearch()
+  }
+})
+
+const debouncedSearch = useDebounce(() => runSearch(), 220)
+
+function onSearchInput(event) {
+  query.set(event.target.value)
+  debouncedSearch()
+}
+
+async function runSearch() {
+  const term = query().trim()
+
+  // An empty box means the whole menu, which is already on the page.
+  if (!term) {
+    matchedIds.set(null)
+    engineUsed.set('')
+    searchFailed.set(false)
+    return
+  }
+
+  searching.set(true)
+  searchFailed.set(false)
+
+  try {
+    const search = new URLSearchParams({ q: term })
+    if (activeCategory() !== 'all') search.set('category', activeCategory())
+    if (activeBrand()) search.set('brand', activeBrand())
+    if (activeStrain()) search.set('strain', activeStrain())
+
+    const res = await fetch(`/api/menu/search?${search}`, { headers: { Accept: 'application/json' } })
+    if (!res.ok) throw new Error(`search failed: ${res.status}`)
+
+    const payload = await res.json()
+    matchedIds.set((payload.results || []).map(hit => String(hit.id)))
+    engineUsed.set(payload.engine || '')
+  }
+  catch (error) {
+    // Leave the full menu on screen and say search did not run, rather than
+    // showing an empty shop.
+    searchFailed.set(true)
+    matchedIds.set(null)
+  }
+  finally {
+    searching.set(false)
+  }
+}
+
+/**
+ * Whether one product survives the current search and filters. Every card and
+ * every table row binds its own visibility to this, with its values baked in
+ * server-side, so no product data has to be shipped to the client twice.
+ */
+function shows(id, category, brand, strain) {
+  if (activeCategory() !== 'all' && category !== activeCategory()) return false
+  if (activeBrand() && brand !== activeBrand()) return false
+  if (activeStrain() && strain !== activeStrain()) return false
+
+  const matched = matchedIds()
+  if (matched !== null && !matched.includes(String(id))) return false
+
+  return true
+}
+
+function setCategory(slug) {
+  activeCategory.set(slug)
+  if (query().trim()) runSearch()
+}
+
+function clearAll() {
+  query.set('')
+  activeCategory.set('all')
+  activeBrand.set('')
+  activeStrain.set('')
+  matchedIds.set(null)
+  searchFailed.set(false)
+}
+
+const filtersActive = derived(() =>
+  query().trim() !== '' || activeCategory() !== 'all' || activeBrand() !== '' || activeStrain() !== '',
+)
+
+/** Zero visible rows after a search is a real state and needs its own message. */
+const noMatches = derived(() => matchedIds() !== null && matchedIds().length === 0)
+</script>
+
+<template>
+  <div data-stx-content>
+
+  {{-- stx only binds client directives inside <template> with a
+       data-stx-content root. Without it the page renders and every :if,
+       :hidden and @click is silently inert. --}}
+  <div class="menu-page">
+  @include('site-nav')
+
+  <main id="top">
+    <section class="section menu-head-section">
+      <div class="shell">
+        <p class="eyebrow">The full menu</p>
+        <div class="menu-head">
+          <h1>Everything on the shelf today</h1>
+          <p class="section-note">
+            {{ navProductCount }} products across {{ navCategories.length }} categories, priced as you see them.
+            Free delivery over {{ navDeliveryMinimum }}, or collect from either room.
+          </p>
+        </div>
+
+        <!-- Search and filters -->
+        <div class="menu-controls">
+          <div class="menu-search">
+            <svg class="menu-search-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6" />
+              <path d="M13.5 13.5 17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            <input
+              id="menu-search"
+              type="search"
+              placeholder="Search strains, brands, effects"
+              aria-label="Search the menu"
+              @input="onSearchInput($event)"
+            />
+            <span class="menu-search-status" :if="searching()">Searching</span>
+          </div>
+
+          <div class="menu-selects">
+            <label class="menu-select">
+              <span class="sr-only">Brand</span>
+              <select aria-label="Filter by brand" @change="activeBrand.set($event.target.value)">
+                <option value="">All brands</option>
+                @foreach (brandsInStock as brand)
+                  <option value="{{ brand }}">{{ brand }}</option>
+                @endforeach
+              </select>
+            </label>
+
+            <label class="menu-select">
+              <span class="sr-only">Strain</span>
+              <select aria-label="Filter by strain" @change="activeStrain.set($event.target.value)">
+                <option value="">All strains</option>
+                @foreach (strains as strain)
+                  <option value="{{ strain }}">{{ strain }}</option>
+                @endforeach
+              </select>
+            </label>
+
+            <div class="menu-view" role="group" aria-label="View">
+              <button type="button" :aria-pressed="view() === 'grid' ? 'true' : 'false'" @click="view.set('grid')">Grid</button>
+              <button type="button" :aria-pressed="view() === 'table' ? 'true' : 'false'" @click="view.set('table')">Table</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="filters menu-filters">
+          <button type="button" class="filter" :aria-pressed="activeCategory() === 'all' ? 'true' : 'false'" @click="setCategory('all')">
+            All
+          </button>
+          @foreach (navCategories as category)
+            <button
+              type="button"
+              class="filter"
+              :aria-pressed="activeCategory() === '{{ category.slug }}' ? 'true' : 'false'"
+              @click="setCategory('{{ category.slug }}')"
+            >
+              {{ category.name }}
+            </button>
+          @endforeach
+        </div>
+
+        <p class="menu-meta">
+          <span :if="engineUsed() === 'typesense'">Results from the search engine.</span>
+          <span :if="engineUsed() === 'database'">Search engine unavailable, so these came from the database.</span>
+          <span :if="searchFailed()">Search did not run, so the full menu is shown.</span>
+          <button type="button" class="menu-clear" :if="filtersActive()" @click="clearAll()">Clear everything</button>
+        </p>
+      </div>
+    </section>
+
+    <section class="section menu-results-section">
+      <div class="shell">
+        <p class="menu-empty" :if="noMatches()">
+          Nothing on the shelf matches that. Try a shorter search, or
+          <button type="button" class="menu-clear" @click="clearAll()">show the whole menu</button>.
+        </p>
+
+        <!--
+          Two views over the same rows. The grid is the shop; the table is for
+          comparing potency against price down a column, which a grid of cards
+          makes genuinely hard.
+
+          Both are server-rendered and hidden with CSS rather than re-rendered,
+          so the whole catalog stays in the HTML for search engines.
+        -->
+        <div class="grid menu-grid" :hidden="view() !== 'grid'">
+          @foreach (products as product)
+            <article
+              class="card"
+              data-cat="{{ product.category }}"
+              :hidden="!shows('{{ product.id }}', '{{ product.category }}', {{ brandJson(product.brand) }}, '{{ product.strain }}')"
+            >
+              <div class="card-media">
+                <img src="{{ product.image }}" alt="{{ product.name }}" width="600" height="750" loading="lazy" decoding="async">
+                @if (product.strain)
+                  <span class="card-strain on-media">{{ product.strain }}</span>
+                @endif
+              </div>
+              <p class="card-brand">{{ product.brand }}</p>
+              <h3>{{ product.name }}</h3>
+              <p class="card-potency mono">{{ product.thc }} THC{{ product.cbd ? ' · ' + product.cbd + ' CBD' : '' }}</p>
+              <div class="card-foot">
+                <p class="card-price mono">
+                  <s :if="product.wasPrice">{{ product.wasPrice }}</s>{{ product.price }}
+                  <span class="card-unit">/ {{ product.unit }}</span>
+                </p>
+              </div>
+            </article>
+          @endforeach
+        </div>
+
+        <div class="menu-table-wrap" :hidden="view() !== 'table'">
+          <table class="menu-table">
+            <caption class="sr-only">The full ERBA menu, sortable by column</caption>
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Brand</th>
+                <th scope="col">Category</th>
+                <th scope="col">Strain</th>
+                <th scope="col" class="num">THC</th>
+                <th scope="col">Size</th>
+                <th scope="col" class="num">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (products as product)
+                <tr :hidden="!shows('{{ product.id }}', '{{ product.category }}', {{ brandJson(product.brand) }}, '{{ product.strain }}')">
+                  <th scope="row">{{ product.name }}</th>
+                  <td>{{ product.brand }}</td>
+                  <td>{{ product.categoryName }}</td>
+                  <td class="cap">{{ product.strain }}</td>
+                  <td class="num mono">{{ product.thc }}</td>
+                  <td class="mono">{{ product.unit }}</td>
+                  <td class="num mono">{{ product.price }}</td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="application/ld+json">{!! jsonLd !!}</script>
+  </div>
+
+  </div>
+</template>
+@endsection

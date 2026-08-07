@@ -14,6 +14,9 @@ export default {
   // Storefront: bag, checkout, VIP signup.
   'api': 'api',
 
+  // Menu search, backed by Typesense with a database fallback.
+  'menu': { path: 'menu', prefix: '/api' },
+
   // Delivery: driver position ingest and stop lifecycle (staff-authed), plus
   // the customer's tracking read, which authorises on an order's token.
   'delivery': { path: 'delivery', prefix: '/api/delivery' },

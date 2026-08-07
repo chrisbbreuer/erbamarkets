@@ -124,7 +124,7 @@
     <div class="nav-actions">
       {{--
         id="theme-toggle" is the contract with stx: its pre-paint guard binds
-        the click, flips `.dark` on <html>, persists it and re-asserts on SPA
+        the click, flips `.dark` on the root element, persists it, re-asserts on SPA
         hops. No handler here on purpose - a second one would fight it.
 
         The label names where the next click goes, not the current state.
