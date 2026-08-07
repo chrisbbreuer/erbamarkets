@@ -7648,6 +7648,22 @@
             "isUnique": true,
             "isNullable": true,
             "hasDefault": false
+          },
+          {
+            "name": "latitude",
+            "type": "integer",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": false
+          },
+          {
+            "name": "longitude",
+            "type": "integer",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": false
           }
         ],
         "indexes": [
@@ -9677,7 +9693,7 @@
       }
     ]
   },
-  "hash": "367e750e1faa640932e1d3a4c49b08c5d13dfdc3a688fb7ca4d33c48b248c54e",
+  "hash": "bc916419dee079c85ffdf04f0b00401a0d66efb0f6f9dcd0b9f31db0ffb60e86",
   "dialect": "sqlite",
-  "updatedAt": "2026-08-07T17:59:56.467Z"
+  "updatedAt": "2026-08-07T19:07:06.211Z"
 }

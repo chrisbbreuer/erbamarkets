@@ -1,5 +1,7 @@
+import { commerce } from '@stacksjs/commerce'
 import { response, route } from '@stacksjs/router'
 import Cart from '../app/Models/Cart'
+import Store from '../app/Models/Store'
 import Product from '../app/Models/Product'
 import CartItem from '../storage/framework/defaults/app/Models/commerce/CartItem'
 import Order from '../storage/framework/defaults/app/Models/commerce/Order'
@@ -25,6 +27,12 @@ import Subscriber from '../storage/framework/defaults/app/Models/Subscriber'
 /** California cannabis excise plus LA district and state sales tax, combined. */
 const TAX_RATE = 0.2725
 const DELIVERY_MINIMUM_CENTS = 3000
+
+/**
+ * How far a van goes. Both rooms are on the Westside and the delivery FAQ
+ * promises 45 to 60 minutes, which in LA traffic is about five miles.
+ */
+const DELIVERY_RADIUS_METERS = 8000
 
 route.get('/', () => response.json({ name: 'ERBA Markets', status: 'ok' }))
 
@@ -120,6 +128,37 @@ route.post('/orders', async (request: any) => {
   if (fulfillment === 'delivery' && totals.subtotal < DELIVERY_MINIMUM_CENTS)
     return response.badRequest('Delivery orders start at $30. Add a little more, or switch to pickup.')
 
+  const contactName = String(request.input('name', '')).trim()
+  const contactPhone = String(request.input('phone', '')).trim()
+
+  if (!contactName || !contactPhone)
+    return response.badRequest('We need a name and a phone number to hand the order over.')
+
+  // A delivery needs a real point, not a string. Resolve it before writing the
+  // order: an order that exists with an address nobody can find is worse than
+  // a checkout that says so while the customer is still looking at the form.
+  let destination: { latitude: number, longitude: number, formatted: string } | null = null
+
+  if (fulfillment === 'delivery') {
+    const street = String(request.input('address', '')).trim()
+    if (!street)
+      return response.badRequest('Where should we bring it?')
+
+    const located = await locate({
+      street,
+      unit: String(request.input('unit', '')).trim() || undefined,
+      city: String(request.input('city', 'Los Angeles')).trim() || 'Los Angeles',
+      region: 'CA',
+      postalCode: String(request.input('postalCode', '')).trim() || undefined,
+      country: 'US',
+    })
+
+    if (located.error)
+      return response.badRequest(located.error)
+
+    destination = located.result
+  }
+
   const order = await Order.create({
     status: 'PENDING',
     totalAmount: totals.total,
@@ -129,8 +168,15 @@ route.post('/orders', async (request: any) => {
     deliveryFee: 0,
     tipAmount: 0,
     orderType: fulfillment === 'pickup' ? 'PICKUP' : 'DELIVERY',
-    deliveryAddress: String(request.input('address', '')),
-    specialInstructions: String(request.input('notes', '')),
+    // The provider's normalised address, not the customer's typing: it is what
+    // the driver reads and what the geocode actually resolved to.
+    deliveryAddress: destination?.formatted ?? '',
+    deliveryLatitude: destination?.latitude ?? null,
+    deliveryLongitude: destination?.longitude ?? null,
+    specialInstructions: [String(request.input('unit', '')).trim(), String(request.input('notes', '')).trim()]
+      .filter(Boolean)
+      .join(' - '),
+    trackingToken: crypto.randomUUID().replace(/-/g, ''),
     // Both stores quote 45 to 60 minutes; the shorter end is what we promise.
     estimatedDeliveryTime: new Date(Date.now() + 45 * 60_000).toISOString(),
   })
@@ -149,6 +195,8 @@ route.post('/orders', async (request: any) => {
     orderId: order.id,
     reference: `ERBA-${String(order.id).padStart(5, '0')}`,
     fulfillment,
+    trackingUrl: fulfillment === 'delivery' ? `/track?t=${order.tracking_token}` : '',
+    address: destination?.formatted ?? '',
     ...totals,
   })
 })
@@ -167,6 +215,56 @@ route.post('/vip', async (request: any) => {
 
   return response.created({ message: 'You are on the list. Watch for the drop emails.' })
 })
+
+/**
+ * Geocode a delivery address and check it is somewhere we go.
+ *
+ * Returns the customer-facing reason on failure rather than a boolean, because
+ * "we could not find that address", "we do not deliver that far" and "our
+ * address lookup is down" all need different words and different next steps.
+ */
+async function locate(_query: Record<string, string | undefined>): Promise<{
+  result: { latitude: number, longitude: number, formatted: string } | null
+  error: string
+}> {
+  const { geocoding } = commerce.shippings
+
+  let located
+  try {
+    located = await geocoding.geocode(query as any)
+  }
+  catch {
+    // The provider is unreachable. Refusing the order would lose a sale over
+    // someone else's outage, so take it and let dispatch resolve the address
+    // by hand; the driver has the phone number either way.
+    return { result: null, error: '' }
+  }
+
+  if (!located)
+    return { result: null, error: 'We could not find that address. Check the street number and try again.' }
+
+  const stores = await Store.where('is_active', true).get()
+  const origins = stores
+    .map((store: any) => ({ latitude: store.latitude, longitude: store.longitude }))
+    .filter((point: any) => typeof point.latitude === 'number' && typeof point.longitude === 'number')
+
+  // No store has coordinates yet, so there is nothing to measure against.
+  // Accept the order rather than reject every delivery on a data gap.
+  if (origins.length === 0)
+    return { result: located, error: '' }
+
+  const coverage = geocoding.checkCoverage(located, origins, DELIVERY_RADIUS_METERS)
+
+  if (coverage && !coverage.covered) {
+    const miles = (coverage.distanceMeters / 1609).toFixed(1)
+    return {
+      result: null,
+      error: `That address is ${miles} miles from our nearest room, past where we deliver. Pickup is still open.`,
+    }
+  }
+
+  return { result: located, error: '' }
+}
 
 /** The visitor's bag token, from the request body or the `x-bag-token` header. */
 function cartToken(request: any): string {

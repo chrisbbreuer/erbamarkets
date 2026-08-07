@@ -153,15 +153,33 @@ export default defineModel({
       factory: () => JSON.stringify(['Delivery', 'In-Store Shopping', 'ATM', 'Off-Street Parking']),
     },
 
-    mapUrl: {
+    /**
+     * The room's own coordinates. A delivery radius is measured from here, so
+     * without them every address check has nothing to compare against.
+     */
+    latitude: {
       order: 16,
+      fillable: true,
+      validation: { rule: schema.number().min(-90).max(90) },
+      factory: () => 34.0361,
+    },
+
+    longitude: {
+      order: 17,
+      fillable: true,
+      validation: { rule: schema.number().min(-180).max(180) },
+      factory: () => -118.4453,
+    },
+
+    mapUrl: {
+      order: 18,
       fillable: true,
       validation: { rule: schema.string() },
       factory: () => 'https://maps.app.goo.gl/Szvf1TP2Wh5iaHkQ9',
     },
 
     imageUrl: {
-      order: 17,
+      order: 19,
       fillable: true,
       validation: { rule: schema.string() },
       factory: () => '',
@@ -169,7 +187,7 @@ export default defineModel({
 
     /** Free delivery above this amount, in dollars. Zero means no minimum. */
     deliveryMinimum: {
-      order: 18,
+      order: 20,
       fillable: true,
       default: 30,
       validation: { rule: schema.number().min(0) },
@@ -177,7 +195,7 @@ export default defineModel({
     },
 
     displayOrder: {
-      order: 19,
+      order: 21,
       fillable: true,
       default: 1,
       validation: { rule: schema.number() },
@@ -185,7 +203,7 @@ export default defineModel({
     },
 
     isActive: {
-      order: 20,
+      order: 22,
       fillable: true,
       default: true,
       validation: { rule: schema.boolean() },

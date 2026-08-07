@@ -42,6 +42,8 @@ const STORES = [
     deliveryHours: '10AM - 8PM',
     pickupHours: 'Coming soon',
     amenities: ['Delivery', 'In-Store Shopping', 'ATM', 'Off-Street Parking', 'Valet'],
+    latitude: 34.0361,
+    longitude: -118.4453,
     mapUrl: 'https://maps.app.goo.gl/Szvf1TP2Wh5iaHkQ9',
     imageUrl: '/images/erba/sawtelle-entrance.jpg',
     deliveryMinimum: 30,
@@ -63,6 +65,9 @@ const STORES = [
     deliveryHours: '9AM - 9PM',
     pickupHours: '9AM - 9:50PM',
     amenities: ['Delivery', 'In-Store Shopping', 'Curbside Pickup', 'ATM', 'Off-Street Parking'],
+    // Geocoded from the street address rather than eyeballed off a map.
+    latitude: 34.028605,
+    longitude: -118.451568,
     mapUrl: 'https://maps.app.goo.gl/8kK1sQ6yQ8bqoUeq7',
     imageUrl: '/images/erba/sawtelle-outside.jpg',
     deliveryMinimum: 30,
