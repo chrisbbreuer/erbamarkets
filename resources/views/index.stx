@@ -468,7 +468,6 @@ onMount(() => {
       <section id="locations" class="section" style="background: var(--ink-sunken);">
         <div class="shell">
           <div class="section-head reveal">
-            <p class="eyebrow">Locations</p>
             <h2>Two rooms in West LA</h2>
           </div>
 
