@@ -6,6 +6,7 @@ import Inquiry from '../app/Models/Inquiry'
 import Store from '../app/Models/Store'
 import Product from '../app/Models/Product'
 import CartItem from '../storage/framework/defaults/app/Models/commerce/CartItem'
+import Customer from '../storage/framework/defaults/app/Models/commerce/Customer'
 import Order from '../storage/framework/defaults/app/Models/commerce/Order'
 import OrderItem from '../storage/framework/defaults/app/Models/commerce/OrderItem'
 import Subscriber from '../storage/framework/defaults/app/Models/Subscriber'
@@ -248,6 +249,7 @@ route.post('/vip/unsubscribe', 'Actions/UnsubscribeAction')
  */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+
 route.post('/contact', async (request: any) => {
   const name = String(request.input('name', '')).trim()
   const email = String(request.input('email', '')).trim().toLowerCase()
@@ -276,6 +278,118 @@ route.post('/contact', async (request: any) => {
   log.info(`[contact] ${email}: ${subject}`)
 
   return response.created({ message: 'Thank you. We will come back to you within a business day.' })
+})
+
+/**
+ * Leaving a review.
+ *
+ * Three shapes are accepted, because all three are things people actually do:
+ * a star with nothing written, a comment with no star, or both. The commerce
+ * layer enforces that at least one of them is present - a row carrying neither
+ * would inflate the count on a product nobody has said anything about - so
+ * this validates what is specific to the shop and hands the rest over.
+ *
+ * Nothing goes live on submission. `is_approved` stays false until a human
+ * looks, which is what keeps an unmoderated one-star off the menu's star line
+ * within a minute of someone typing it. The response says so rather than
+ * pretending the review is already up.
+ *
+ * Reviews are attached to a customer identified by email. Signing in is not
+ * required to leave one - most people writing a review are not signed in - so
+ * the customer row is created on first review if it does not already exist.
+ */
+route.post('/reviews', async (request: any) => {
+  const slug = String(request.input('productSlug', '')).trim()
+
+  if (!slug)
+    return response.badRequest('That product is not on the menu.')
+
+  const product = await Product.where('slug', slug).first()
+
+  if (!product)
+    return response.badRequest('That product is not on the menu.')
+
+  const name = String(request.input('name', '')).trim()
+  const email = String(request.input('email', '')).trim().toLowerCase()
+
+  if (name.length < 2)
+    return response.badRequest('Please tell us your name.')
+
+  if (!EMAIL_PATTERN.test(email))
+    return response.badRequest('That email address does not look right.')
+
+  const title = String(request.input('title', '')).trim().slice(0, 100)
+  const content = String(request.input('content', '')).trim().slice(0, 2000)
+
+  /*
+   * An absent rating is null, not zero. Zero is a number a star row renders as
+   * "no stars filled in", and it would drag the product's average down as if
+   * somebody had actively scored it nothing.
+   */
+  const raw = request.input('rating', null)
+  const rating = raw === null || raw === undefined || raw === '' ? null : Number(raw)
+
+  if (rating !== null && (!Number.isFinite(rating) || rating < 1 || rating > 5))
+    return response.badRequest('A rating has to be between one and five stars.')
+
+  if (rating === null && !title && !content)
+    return response.badRequest('Add a rating, or write a few words. Either is fine.')
+
+  /*
+   * Reviewers are customers, created on first review. Signing in is not
+   * required to leave one - most people writing a review are not signed in -
+   * and a returning reviewer is matched on their email rather than getting a
+   * second row.
+   *
+   * `avatar` is required by the model and never rendered: the review list
+   * shows a name, not a face. It points at our own mark rather than an avatar
+   * service, so leaving a review does not hand a third party the email address
+   * of everyone who writes one.
+   */
+  let customer = await Customer.where('email', email).first()
+
+  if (!customer) {
+    customer = await Customer.create({
+      name,
+      email,
+      status: 'Active',
+      totalSpent: 0,
+      avatar: 'https://www.erbamarkets.com/images/erba-mark.png',
+    })
+  }
+
+  try {
+    /*
+     * `store()` derives its parameter from `NewModelData<typeof Review>`,
+     * which collapses to `never` in the published declarations - so no
+     * argument is assignable and casting the object changes nothing. The
+     * runtime signature is correct and this path is covered by the commerce
+     * package's own tests; the generated .d.ts is what is wrong.
+     */
+    // @ts-expect-error generated parameter type resolves to never
+    await commerce.products.reviews.store({
+      product_id: product.id,
+      customer_id: customer.id,
+      rating,
+      title,
+      content,
+      // Claimed by the reviewer, not proven. Verifying it means matching the
+      // email against a delivered order, which is a job for the moderator
+      // looking at the queue rather than something to take on trust here.
+      is_verified_purchase: false,
+      is_approved: false,
+    })
+  }
+  catch (error) {
+    log.warn(`[reviews] rejected for ${slug}: ${(error as Error).message}`)
+    return response.badRequest('We could not save that review. Add a rating or a few words and try again.')
+  }
+
+  log.info(`[reviews] ${email} reviewed ${slug}${rating === null ? ' (no rating)' : ` (${rating} stars)`}`)
+
+  return response.created({
+    message: 'Thank you. Your review goes up once someone has read it.',
+  })
 })
 
 route.post('/careers', async (request: any) => {

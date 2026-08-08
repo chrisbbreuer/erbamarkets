@@ -6722,7 +6722,7 @@
             "type": "integer",
             "isPrimaryKey": false,
             "isUnique": false,
-            "isNullable": false,
+            "isNullable": true,
             "hasDefault": false
           },
           {
@@ -9816,7 +9816,7 @@
       }
     ]
   },
-  "hash": "1b71fc43cb167ba75995aa51abdc663fb72b5be29a541dc1e0110278be193736",
+  "hash": "5aeba403dc6d4ca305ac2ffd99389eaef1f9fd3f9d8022cb8e69d390df8a53d1",
   "dialect": "sqlite",
-  "updatedAt": "2026-08-08T04:34:43.234Z"
+  "updatedAt": "2026-08-08T06:50:30.497Z"
 }

@@ -35,10 +35,12 @@
  * no visible effect until `./buddy dev` is restarted - the page keeps serving
  * the version that was loaded first.
  */
+import { commerce } from '@stacksjs/commerce'
 import Product from '../../app/Models/Product'
 import Special from '../../app/Models/Special'
 import Store from '../../app/Models/Store'
 import Category from '../../storage/framework/defaults/app/Models/commerce/Category'
+import Customer from '../../storage/framework/defaults/app/Models/commerce/Customer'
 import Manufacturer from '../../storage/framework/defaults/app/Models/commerce/Manufacturer'
 
 /** Cents to a display price, dropping a trailing `.00` so $30 is not `$30.00`. */
@@ -99,6 +101,10 @@ export interface ProductView {
   image: string
   rating: string
   reviews: number
+  /** `4.3` when rated, empty when not, so a card can branch on one value. */
+  ratingLabel: string
+  /** `(12)` alongside it. Empty when nobody has reviewed it. */
+  reviewsLabel: string
   featured: number
 }
 
@@ -227,6 +233,16 @@ export async function loadCatalog(): Promise<{
       image: row.image_url || '',
       rating: row.rating ? Number(row.rating).toFixed(1) : '',
       reviews: Number(row.review_count || 0),
+      /*
+       * The cached columns on the product row, not a join. A menu of twenty
+       * cards each showing a star line would otherwise be twenty-one queries,
+       * and the cache is what `./buddy seed:reviews` refreshes.
+       *
+       * Both are empty when a product is unrated, so a card renders nothing
+       * rather than "0.0 (0)", which reads as a bad score rather than no score.
+       */
+      ratingLabel: Number(row.rating) > 0 ? Number(row.rating).toFixed(1) : '',
+      reviewsLabel: Number(row.review_count) > 0 ? `(${row.review_count})` : '',
       featured: row.is_featured ? 1 : 0,
     }
   })
@@ -320,5 +336,121 @@ export async function loadSiteModel(): Promise<SiteModel> {
     navFeature,
     navProductCount: products.length,
     navDeliveryMinimum: westla.deliveryMinimum,
+  }
+}
+
+/* ------------------------------------------------------------------------ *
+ * Reviews
+ * ------------------------------------------------------------------------ */
+
+export interface ReviewView {
+  id: number
+  rating: number
+  hasRating: boolean
+  title: string
+  content: string
+  hasContent: boolean
+  author: string
+  verified: boolean
+  date: string
+  stars: { on: boolean }[]
+}
+
+export interface ProductReviews {
+  reviewStats: { total: number, rated: number, commentsOnly: number, average: number }
+  reviews: ReviewView[]
+  averageStars: { on: boolean }[]
+  distribution: { star: number, count: number, width: string }[]
+  reviewsLabel: string
+}
+
+/** Five booleans, because interpolation cannot call a function. */
+function starRow(rating: number): { on: boolean }[] {
+  const filled = Math.round(rating)
+  return [1, 2, 3, 4, 5].map(star => ({ on: star <= filled }))
+}
+
+/** A product nobody has reviewed. Same shape, so the template never branches. */
+export function emptyProductReviews(): ProductReviews {
+  return {
+    reviewStats: { total: 0, rated: 0, commentsOnly: 0, average: 0 },
+    reviews: [],
+    averageStars: starRow(0),
+    distribution: [5, 4, 3, 2, 1].map(star => ({ star, count: 0, width: '0%' })),
+    reviewsLabel: 'No reviews yet',
+  }
+}
+
+/**
+ * Everything a product page prints about what people thought of it.
+ *
+ * Built on `commerce.products.reviews` rather than querying the table here:
+ * `fetchStats` already knows the rule that is easy to get wrong, which is that
+ * a review with no star is counted in the total but left out of the average.
+ * Averaging it in as a zero would punish someone for writing two paragraphs
+ * without picking a number.
+ *
+ * Only approved reviews are read. A newly submitted one is waiting on a human,
+ * and showing it would be publishing on their behalf.
+ */
+export async function loadProductReviews(productId: number): Promise<ProductReviews> {
+  const [stats, rows] = await Promise.all([
+    commerce.products.reviews.fetchStats(productId),
+    commerce.products.reviews.fetchApprovedByProductId(productId),
+  ])
+
+  // Reviewer names in one query rather than one per review.
+  const customerIds = [...new Set(rows.map((row: any) => row.customer_id).filter(Boolean))]
+  const customers = customerIds.length ? await Customer.whereIn('id', customerIds).get() : []
+  const nameById = new Map(customers.map((row: any) => [row.id, row.name]))
+
+  const reviews: ReviewView[] = rows
+    .slice()
+    // Newest first. On a product that has been on the shelf a year, the review
+    // worth reading is the one describing the batch currently in the jar.
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .map((row: any) => {
+      const hasRating = row.rating !== null && row.rating !== undefined
+      const rating = hasRating ? Number(row.rating) : 0
+      const content = row.content || ''
+      const title = row.title || ''
+
+      return {
+        id: row.id,
+        rating,
+        hasRating,
+        title,
+        content,
+        hasContent: Boolean(title || content),
+        author: nameById.get(row.customer_id) || 'ERBA customer',
+        verified: Boolean(row.is_verified_purchase),
+        date: row.created_at
+          ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          : '',
+        stars: starRow(rating),
+      }
+    })
+
+  /*
+   * Bars are scaled against the most-used rating rather than the total, so the
+   * longest one fills its row and the shape stays legible on a product with
+   * six reviews as well as one with six hundred.
+   */
+  const peak = Math.max(1, ...[5, 4, 3, 2, 1].map(star => stats.distribution[star as 1 | 2 | 3 | 4 | 5]))
+
+  return {
+    reviewStats: {
+      total: stats.total,
+      rated: stats.rated,
+      commentsOnly: stats.commentsOnly,
+      average: stats.average,
+    },
+    reviews,
+    averageStars: starRow(stats.average),
+    distribution: [5, 4, 3, 2, 1].map((star) => {
+      const count = stats.distribution[star as 1 | 2 | 3 | 4 | 5]
+      return { star, count, width: `${Math.round((count / peak) * 100)}%` }
+    }),
+    reviewsLabel: stats.total === 1 ? '1 review' : `${stats.total} reviews`,
   }
 }

@@ -18,8 +18,10 @@ declare global {
   const loadCatalog: typeof autoImports.loadCatalog
   const loadSpecials: typeof autoImports.loadSpecials
   const loadSiteModel: typeof autoImports.loadSiteModel
+  const loadProductReviews: typeof autoImports.loadProductReviews
   const money: typeof autoImports.money
   const telHref: typeof autoImports.telHref
+  const emptyProductReviews: typeof autoImports.emptyProductReviews
 }
 
 export {}

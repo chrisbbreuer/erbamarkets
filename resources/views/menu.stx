@@ -385,6 +385,15 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
               </div>
               <p class="card-brand">{{ product.brand }}</p>
               <h3>{{ product.name }}</h3>
+              {{--
+                One line, not five glyphs. A dense card has no room for a star
+                row, and the number is what someone is scanning for anyway.
+                Absent entirely when nothing is rated, because "0.0 (0)" reads
+                as a bad score rather than no score.
+              --}}
+              @if (product.ratingLabel)
+                <p class="card-rating mono"><span class="star star--on" aria-hidden="true">&#9733;</span> {{ product.ratingLabel }} <span class="card-rating-count">{{ product.reviewsLabel }}</span></p>
+              @endif
               <p class="card-potency mono">{{ product.thc }} THC{{ product.cbd ? ' · ' + product.cbd + ' CBD' : '' }}</p>
               <div class="card-foot">
                 <p class="card-price mono">

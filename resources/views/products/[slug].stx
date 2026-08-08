@@ -53,6 +53,18 @@ const related = [...sameCategory, ...others].slice(0, 4)
    crawler this URL is that product. */
 const canonicalPath = found ? `/products/${product.slug}` : '/menu'
 
+/*
+ * Reviews, summary first.
+ *
+ * The counting lives in resources/functions/site.ts on top of
+ * `commerce.products.reviews`, because the subtle part - leaving an unrated
+ * review out of the average rather than averaging it in as a zero - is not
+ * something to re-derive per page.
+ */
+const { reviewStats, reviews, averageStars, distribution, reviewsLabel } = found
+  ? await loadProductReviews(product.id)
+  : emptyProductReviews()
+
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -110,6 +122,95 @@ async function addToBag(productSlug) {
   }
   finally {
     bagBusy.set(false)
+  }
+}
+
+/*
+ * Writing a review.
+ *
+ * Stars and words are independently optional, so the button has to say which
+ * of the three shapes is about to be sent - otherwise someone who tapped four
+ * stars and typed nothing is left wondering whether pressing it does anything.
+ * Zero means "no rating chosen", which is why Clear sets it back to zero
+ * rather than to one.
+ */
+const reviewRating = state(0)
+const reviewName = state('')
+const reviewEmail = state('')
+const reviewTitle = state('')
+const reviewContent = state('')
+const reviewBusy = state(false)
+const reviewSaid = state('')
+const reviewFailed = state(false)
+
+function setRating(value) {
+  reviewRating.set(value)
+}
+
+const reviewShape = derived(() => {
+  const hasWords = Boolean(reviewTitle().trim() || reviewContent().trim())
+  if (reviewRating() > 0 && hasWords) return 'both'
+  if (reviewRating() > 0) return 'rating'
+  if (hasWords) return 'comment'
+  return 'empty'
+})
+
+/* Who you are is required; what you say is what is optional. */
+const reviewReady = derived(() =>
+  reviewShape() !== 'empty'
+  && reviewName().trim().length > 1
+  && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(reviewEmail().trim()),
+)
+
+/*
+ * The slug arrives as an argument rather than being read from a server
+ * variable here. Inside `<script client>` a server value comes through the
+ * bridge already JSON-encoded, so `'{{ product.slug }}'` wraps quotes around
+ * quotes and posts the string `"blue-flame-og"` including them. Template
+ * attribute interpolation does not do that, which is how `addToBag` above
+ * gets its slug too.
+ */
+async function sendReview(productSlug) {
+  if (!reviewReady() || reviewBusy())
+    return
+
+  reviewBusy.set(true)
+  reviewFailed.set(false)
+
+  try {
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() || '' },
+      body: JSON.stringify({
+        productSlug,
+        name: reviewName().trim(),
+        email: reviewEmail().trim(),
+        // Null rather than 0, so an unrated review is not scored as nothing.
+        rating: reviewRating() > 0 ? reviewRating() : null,
+        title: reviewTitle().trim(),
+        content: reviewContent().trim(),
+      }),
+    })
+
+    const body = await res.json()
+
+    if (!res.ok) {
+      reviewFailed.set(true)
+      reviewSaid.set(body?.message || 'That did not go through. Try again in a moment.')
+      return
+    }
+
+    reviewSaid.set(body?.data?.message || body?.message || 'Thank you. Your review goes up once someone has read it.')
+    reviewRating.set(0)
+    reviewTitle.set('')
+    reviewContent.set('')
+  }
+  catch {
+    reviewFailed.set(true)
+    reviewSaid.set('We could not reach the store. Check your connection and try again.')
+  }
+  finally {
+    reviewBusy.set(false)
   }
 }
 </script>
@@ -197,6 +298,159 @@ async function addToBag(productSlug) {
         </div>
       </section>
 
+      @endif
+
+      @if (found)
+        <section class="section reviews-section" id="reviews" aria-labelledby="reviews-title">
+          <div class="shell">
+            <div class="section-head reviews-head">
+              <p class="eyebrow">What people said</p>
+              <h2 id="reviews-title">Reviews</h2>
+            </div>
+
+            <div class="reviews-layout">
+              {{--
+                Summary. A rating and a comment are separate things here, so
+                the panel says how many of each rather than implying every
+                review carries a score.
+              --}}
+              <aside class="review-summary">
+                @if (reviewStats.rated)
+                  <p class="review-average mono">{{ reviewStats.average }}</p>
+                  <div class="stars stars-lg" role="img" aria-label="{{ reviewStats.average }} out of 5 stars">
+                    @foreach (averageStars as star)
+                      <span class="star {{ star.on ? 'star--on' : '' }}" aria-hidden="true">&#9733;</span>
+                    @endforeach
+                  </div>
+                  <p class="review-count">{{ reviewsLabel }}, {{ reviewStats.rated }} with a rating</p>
+
+                  <dl class="review-bars">
+                    @foreach (distribution as row)
+                      <div class="review-bar">
+                        <dt class="mono">{{ row.star }}&#9733;</dt>
+                        <dd>
+                          <span class="review-bar-track"><span class="review-bar-fill" style="width: {{ row.width }}"></span></span>
+                          <span class="review-bar-count mono">{{ row.count }}</span>
+                        </dd>
+                      </div>
+                    @endforeach
+                  </dl>
+
+                  @if (reviewStats.commentsOnly)
+                    <p class="review-note">
+                      Plus {{ reviewStats.commentsOnly }} written without a rating. Those are
+                      not counted in the average.
+                    </p>
+                  @endif
+                @else
+                  <p class="review-average mono">&mdash;</p>
+                  <p class="review-count">{{ reviewsLabel }}</p>
+                  <p class="review-note">Nobody has rated this yet. Be the first.</p>
+                @endif
+              </aside>
+
+              <div class="review-main">
+                @if (reviews.length)
+                  <ol class="review-list">
+                    @foreach (reviews as review)
+                      <li class="review">
+                        <div class="review-meta">
+                          @if (review.hasRating)
+                            <div class="stars" role="img" aria-label="{{ review.rating }} out of 5 stars">
+                              @foreach (review.stars as star)
+                                <span class="star {{ star.on ? 'star--on' : '' }}" aria-hidden="true">&#9733;</span>
+                              @endforeach
+                            </div>
+                          @endif
+                          <span class="review-author">{{ review.author }}</span>
+                          @if (review.verified)
+                            <span class="tag review-verified">Verified purchase</span>
+                          @endif
+                          <span class="review-date mono">{{ review.date }}</span>
+                        </div>
+
+                        @if (review.title)
+                          <h3 class="review-title">{{ review.title }}</h3>
+                        @endif
+                        @if (review.content)
+                          <p class="review-body">{{ review.content }}</p>
+                        @endif
+                      </li>
+                    @endforeach
+                  </ol>
+                @else
+                  <p class="review-empty">No reviews on this one yet.</p>
+                @endif
+
+                {{--
+                  Writing one. Stars and words are both optional on their own,
+                  and the button copy says which of the three you are about to
+                  send so nobody wonders whether a starless review counts.
+                --}}
+                <div class="form-card review-form" id="write-a-review">
+                  <h3>Write a review</h3>
+                  <p class="review-form-note">
+                    Leave a rating, write a few words, or do both. Reviews go up once
+                    someone has read them.
+                  </p>
+
+                  <fieldset class="review-stars-field">
+                    <legend>Rating <span class="review-optional">optional</span></legend>
+                    <div class="star-input">
+                      @foreach ([1, 2, 3, 4, 5] as value)
+                        <button
+                          type="button"
+                          class="star-button"
+                          :class="reviewRating() >= {{ value }} ? 'star-button--on' : ''"
+                          :aria-pressed="reviewRating() === {{ value }} ? 'true' : 'false'"
+                          aria-label="{{ value }} stars"
+                          @click="setRating({{ value }})"
+                        >&#9733;</button>
+                      @endforeach
+                      <button type="button" class="star-clear" :if="reviewRating() > 0" @click="setRating(0)">Clear</button>
+                    </div>
+                  </fieldset>
+
+                  <div class="form-grid form-grid-2">
+                    <div class="field">
+                      <label for="review-name">Name</label>
+                      <input id="review-name" type="text" autocomplete="name" placeholder="How it appears on the review" x-model.trim="reviewName">
+                    </div>
+                    <div class="field">
+                      <label for="review-email">Email</label>
+                      <input id="review-email" type="email" autocomplete="email" placeholder="you@example.com" x-model.trim="reviewEmail">
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label for="review-title">Headline <span class="review-optional">optional</span></label>
+                    <input id="review-title" type="text" placeholder="Sum it up in a few words" x-model.trim="reviewTitle">
+                  </div>
+
+                  <div class="field">
+                    <label for="review-content">Review <span class="review-optional">optional</span></label>
+                    <textarea id="review-content" placeholder="How was it? What would you tell a friend?" x-model.trim="reviewContent"></textarea>
+                  </div>
+
+                  <div>
+                    <button type="button" class="btn btn-primary" :disabled="reviewBusy() || !reviewReady()" @click="sendReview('{{ product.slug }}')">
+                      <span :if="reviewShape() === 'rating'">Send rating</span>
+                      <span :if="reviewShape() === 'comment'">Send review</span>
+                      <span :if="reviewShape() === 'both'">Send rating and review</span>
+                      <span :if="reviewShape() === 'empty'">Send</span>
+                    </button>
+                  </div>
+
+                  <p class="form-status" :if="!reviewSaid()">
+                    We publish your name and what you wrote, never your email address.
+                  </p>
+                  <p class="form-status" data-state="said" :if="reviewSaid() &amp;&amp; !reviewFailed()">{{ reviewSaid() }}</p>
+                  <p class="form-status" data-state="failed" :if="reviewFailed()">{{ reviewSaid() }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       @endif
 
       @if (found && related.length)

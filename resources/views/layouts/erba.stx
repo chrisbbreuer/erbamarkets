@@ -1291,6 +1291,76 @@
       .form-status[data-state='said'] { color: var(--acid); }
       .form-status[data-state='failed'] { color: #e0674d; }
 
+      /*
+       * ---------- reviews ----------
+       *
+       * A rating and a written comment are separate things: a review may carry
+       * either or both. So the star row is its own element that simply is not
+       * rendered when there is no rating, rather than five empty outlines
+       * standing in for one — which reads as "rated zero".
+       */
+      .reviews-section { background: var(--ink-sunken); }
+      .reviews-head { margin-bottom: 2.5rem; }
+      .reviews-layout { display: grid; gap: 3rem; align-items: start; }
+      @media (min-width: 900px) { .reviews-layout { grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 4rem; } }
+
+      .stars { display: inline-flex; gap: 0.1rem; line-height: 1; }
+      .star { color: var(--faint-strong); font-size: 0.95rem; }
+      .star--on { color: var(--acid); }
+      .stars-lg .star { font-size: 1.5rem; }
+
+      .review-summary { position: sticky; top: 6rem; display: grid; gap: 0.85rem; justify-items: start; }
+      @media (max-width: 899px) { .review-summary { position: static; } }
+      .review-average { font-size: clamp(3rem, 7vw, 4.25rem); line-height: 1; font-weight: 500; }
+      .review-count { font-size: 0.85rem; color: var(--muted); }
+      .review-note { font-size: 0.8rem; color: var(--muted); line-height: 1.6; max-width: 34ch; }
+
+      .review-bars { width: 100%; margin-top: 0.75rem; display: grid; gap: 0.4rem; }
+      .review-bar { display: grid; grid-template-columns: 2.5rem 1fr; align-items: center; gap: 0.75rem; }
+      .review-bar dt { font-size: 0.75rem; color: var(--muted); }
+      .review-bar dd { margin: 0; display: grid; grid-template-columns: 1fr 2rem; align-items: center; gap: 0.6rem; }
+      .review-bar-track { height: 6px; background: rgb(var(--paper-rgb) / 0.10); overflow: hidden; }
+      .review-bar-fill { display: block; height: 100%; background: var(--acid); }
+      .review-bar-count { font-size: 0.72rem; color: var(--muted); text-align: right; }
+
+      .review-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border-top: 1px solid var(--faint); }
+      .review { padding: 1.75rem 0; border-bottom: 1px solid var(--faint); }
+      .review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+      .review-author { font-size: 0.85rem; font-weight: 600; }
+      .review-date { font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+      .review-verified { border-color: var(--acid); color: var(--acid); }
+      .review-title { margin-top: 0.85rem; font-size: 1rem; }
+      .review-body { margin-top: 0.6rem; max-width: 68ch; color: var(--muted); line-height: 1.7; }
+      .review-empty { padding: 1.75rem 0; color: var(--muted); border-top: 1px solid var(--faint); border-bottom: 1px solid var(--faint); }
+
+      .review-form { margin-top: 2.5rem; max-width: none; }
+      .review-form h3 { font-size: 1.05rem; }
+      .review-form-note { font-size: 0.85rem; color: var(--muted); line-height: 1.6; max-width: 52ch; }
+      .review-optional { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-left: 0.4rem; }
+
+      .review-stars-field { border: 0; padding: 0; margin: 0; }
+      .review-stars-field legend { padding: 0; font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+      .star-input { display: flex; align-items: center; gap: 0.2rem; margin-top: 0.6rem; }
+      .star-button {
+        border: 0;
+        background: transparent;
+        padding: 0.1rem;
+        font-size: 1.75rem;
+        line-height: 1;
+        cursor: pointer;
+        color: var(--faint-strong);
+        transition: color 0.12s var(--ease), transform 0.12s var(--ease);
+      }
+      .star-button:hover { transform: scale(1.12); }
+      .star-button--on { color: var(--acid); }
+      .star-button:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
+      .star-clear { margin-left: 0.75rem; border: 0; background: transparent; cursor: pointer; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+      .star-clear:hover { color: var(--acid); }
+
+      .card-rating { display: flex; align-items: center; gap: 0.3rem; margin-top: 0.35rem; font-size: 0.76rem; color: var(--muted); }
+      .card-rating .star { font-size: 0.8rem; }
+      .card-rating-count { color: var(--muted); opacity: 0.75; }
+
       /* ---------- bag drawer ---------- */
       .drawer-scrim { position: fixed; inset: 0; z-index: 60; background: rgb(var(--scrim-rgb) / 0.7); backdrop-filter: blur(6px); }
       .drawer {
