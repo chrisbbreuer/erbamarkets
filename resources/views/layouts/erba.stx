@@ -265,23 +265,74 @@
       .gate-legal { margin-top: 2rem; font-size: 0.75rem; color: var(--muted); }
 
       /* ---------- nav ---------- */
+      /*
+       * Two rows on a phone: wordmark and controls on top, the links on their
+       * own full-width scrollable row underneath. Squeezed onto one row they
+       * had about 140px to work with and clipped "Specials" mid-word, which
+       * reads as broken rather than scrollable.
+       */
       .nav {
         position: sticky;
         top: 0;
         z-index: 40;
-        height: 72px;
+        min-height: 72px;
         display: flex;
         align-items: center;
         border-bottom: 1px solid var(--faint);
         background: rgb(var(--ink-rgb) / 0.86);
         backdrop-filter: blur(14px);
       }
-      .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; width: var(--shell); margin-inline: auto; }
-      .wordmark { font-size: 1.45rem; font-weight: 900; letter-spacing: 0.3em; text-transform: uppercase; }
-      .nav-links { display: none; gap: 2rem; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; }
-      .nav-links a { color: var(--muted); transition: color 0.18s var(--ease); }
+      .nav-inner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem 1rem;
+        width: var(--shell);
+        margin-inline: auto;
+        min-width: 0;
+        padding-block: 0.9rem;
+      }
+      @media (min-width: 1024px) { .nav-inner { flex-wrap: nowrap; gap: 2rem; padding-block: 0; } }
+      .wordmark { flex: 0 0 auto; font-size: 1.2rem; font-weight: 900; letter-spacing: 0.3em; text-transform: uppercase; }
+      /*
+       * The nav links were display:none below 1024px with no hamburger behind
+       * them, so a phone had no way to reach the menu, the specials or the
+       * locations at all. They are a scrollable row on mobile instead: no
+       * disclosure state to plumb through four pages, and the destinations
+       * stay one tap away.
+       */
+      .nav-links {
+        display: flex;
+        gap: 1.25rem;
+        min-width: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .nav-links::-webkit-scrollbar { display: none; }
+      .nav-links a { color: var(--muted); white-space: nowrap; transition: color 0.18s var(--ease); }
       .nav-links a:hover { color: var(--paper); }
-      .nav-actions { display: flex; align-items: center; gap: 0.6rem; }
+      .nav-links { order: 3; flex: 1 0 100%; padding-bottom: 0.15rem; }
+      @media (min-width: 1024px) {
+        .nav-links { order: 0; flex: 0 1 auto; gap: 2rem; overflow: visible; padding-bottom: 0; font-size: 0.78rem; letter-spacing: 0.16em; }
+      }
+
+      /*
+       * The mega panel is a four-column desktop object. On a phone the trigger
+       * becomes a plain link to the menu page, which is where the panel was
+       * sending people anyway.
+       */
+      .mega, .nav-cta { display: none; }
+      .nav-link-mobile { display: inline; }
+      @media (min-width: 1024px) {
+        .mega, .nav-cta { display: inline-flex; }
+        .nav-link-mobile { display: none; }
+      }
+      .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
       .bag-button {
         display: inline-flex;
         align-items: center;
@@ -298,7 +349,7 @@
       }
       .bag-button:hover { border-color: var(--paper); }
       .bag-count { min-width: 1.4rem; padding: 0 0.35rem; border-radius: 999px; background: var(--acid); color: var(--on-acid); font-weight: 700; }
-      @media (min-width: 1024px) { .nav-links { display: flex; } }
+
 
       /*
        * Theme toggle. One button, two icons, and the one that shows is the
@@ -527,7 +578,9 @@
 
       /* ---------- sign in ---------- */
       .section.login-section { min-height: 100dvh; display: grid; place-items: center; padding-block: 4rem; }
-      .login-shell { width: min(420px, 100%); }
+      /* `100%` here overrode the shell's gutter, so the inputs ran edge to
+         edge on a phone with nothing between them and the screen border. */
+      .login-shell { width: min(420px, 100% - 3rem); }
       .login-shell h1 { margin-top: 1.1rem; font-size: clamp(2rem, 5vw, 2.75rem); text-transform: uppercase; }
       .login-note { margin-top: 1rem; }
       .login-form { margin-top: 2.5rem; display: grid; gap: 1.25rem; }
@@ -685,6 +738,19 @@
         background: rgb(var(--acid-rgb) / 0.22);
         font-size: 0.8rem;
         line-height: 1;
+      }
+
+      /*
+       * Stacked, the bar's dividers have to run horizontally. Left borders on
+       * the wrapped rows left stray vertical fragments hanging off the side.
+       */
+      @media (max-width: 1023px) {
+        .menu-search { flex: 1 0 100%; }
+        .menu-selects { flex: 1 0 100%; border-left: 0; border-top: 1px solid var(--faint-strong); }
+        .menu-selects > * { flex: 1 1 0; min-width: 0; }
+        .menu-select select { width: 100%; }
+        .menu-view { flex: 1 0 100%; border-left: 0; border-top: 1px solid var(--faint-strong); }
+        .menu-view button { flex: 1 1 0; }
       }
 
       .menu-filters { margin-top: 1.25rem; }

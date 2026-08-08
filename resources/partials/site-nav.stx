@@ -13,6 +13,8 @@
     <a href="/" class="wordmark">Erba</a>
 
     <nav class="nav-links" aria-label="Primary">
+      {{-- Phones get a link; the mega panel is a desktop object. --}}
+      <a class="nav-link-mobile" href="/menu">Menu</a>
       {{--
         The mega menu hangs off Menu because that is the only nav item with
         enough behind it to justify a panel: six categories, the brands we
@@ -149,7 +151,7 @@
         Bag
         <span class="bag-count mono" :if="bagCount() > 0">{{ bagCount() }}</span>
       </button>
-      <a href="/menu" class="btn btn-primary btn-small">Order online</a>
+      <a href="/menu" class="btn btn-primary btn-small nav-cta">Order online</a>
     </div>
   </div>
 </header>
