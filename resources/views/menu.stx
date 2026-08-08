@@ -416,6 +416,8 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
                 <th scope="col">Strain</th>
                 <th scope="col" class="num">THC</th>
                 <th scope="col">Size</th>
+                {{-- The menu can sort by rating, so the table has to show it. --}}
+                <th scope="col" class="num">Rating</th>
                 <th scope="col" class="num">Price</th>
               </tr>
             </thead>
@@ -428,6 +430,8 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
                   <td class="cap">{{ product.strain }}</td>
                   <td class="num mono">{{ product.thc }}</td>
                   <td class="mono">{{ product.unit }}</td>
+                  {{-- An em dash rather than 0.0, which reads as a bad score. --}}
+                  <td class="num mono">{{ product.ratingLabel ? product.ratingLabel + ' ' + product.reviewsLabel : '—' }}</td>
                   <td class="num mono">{{ product.price }}</td>
                 </tr>
               @endforeach

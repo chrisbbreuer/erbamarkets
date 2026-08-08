@@ -65,6 +65,20 @@ const { reviewStats, reviews, averageStars, distribution, reviewsLabel } = found
   ? await loadProductReviews(product.id)
   : emptyProductReviews()
 
+/*
+ * Structured data, including what people said.
+ *
+ * schema.org draws the same distinction this page does: `ratingCount` counts
+ * the ratings, `reviewCount` counts the reviews. A review with no stars is one
+ * of the second and not the first, so the two numbers differ here and both are
+ * honest.
+ *
+ * `aggregateRating` is omitted entirely when nothing is rated. Emitting one
+ * with a count of zero is invalid and Google rejects the whole block for it,
+ * which would cost the product its rich result rather than just its stars.
+ */
+const ratedReviews = reviews.filter(review => review.hasRating)
+
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -78,6 +92,29 @@ const jsonLd = JSON.stringify({
     'priceCurrency': 'USD',
     'availability': 'https://schema.org/InStock',
   },
+  'aggregateRating': reviewStats.rated > 0
+    ? {
+        '@type': 'AggregateRating',
+        'ratingValue': reviewStats.average,
+        'ratingCount': reviewStats.rated,
+        'reviewCount': reviewStats.total,
+        'bestRating': 5,
+        'worstRating': 1,
+      }
+    : undefined,
+  // A handful, not all of them: the block is markup a crawler reads, and the
+  // page below is the canonical copy.
+  'review': reviews.slice(0, 5).map(review => ({
+    '@type': 'Review',
+    'author': { '@type': 'Person', 'name': review.author },
+    'name': review.title || undefined,
+    'reviewBody': review.content || undefined,
+    // Absent for an unrated review rather than zero, which schema.org would
+    // read as a score of nothing.
+    'reviewRating': review.hasRating
+      ? { '@type': 'Rating', 'ratingValue': review.rating, 'bestRating': 5, 'worstRating': 1 }
+      : undefined,
+  })),
 })
 </script>
 
