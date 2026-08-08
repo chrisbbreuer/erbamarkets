@@ -355,6 +355,9 @@ async function sendReview(productSlug) {
                     @foreach (reviews as review)
                       <li class="review">
                         <div class="review-meta">
+                          @if (review.featured)
+                            <span class="tag review-pinned">Pick of the reviews</span>
+                          @endif
                           @if (review.hasRating)
                             <div class="stars" role="img" aria-label="{{ review.rating }} out of 5 stars">
                               @foreach (review.stars as star)
@@ -374,6 +377,9 @@ async function sendReview(productSlug) {
                         @endif
                         @if (review.content)
                           <p class="review-body">{{ review.content }}</p>
+                        @endif
+                        @if (review.helpfulLabel)
+                          <p class="review-helpful mono">{{ review.helpfulLabel }}</p>
                         @endif
                       </li>
                     @endforeach

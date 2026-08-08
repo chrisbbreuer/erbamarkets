@@ -167,7 +167,10 @@ declare module '@stacksjs/database' {
       uuid: string
       created_at: string
       updated_at: string | null
+      session_token: unknown
       status: unknown
+      store_slug: unknown
+      fulfillment: unknown
       total_items: unknown
       subtotal: unknown
       tax_amount: unknown
@@ -269,7 +272,31 @@ declare module '@stacksjs/database' {
       delivery_time: unknown
       total_distance: unknown
       last_active: unknown
+      status: unknown
+      started_at: unknown
+      completed_at: unknown
       driver_id: number
+    }
+    delivery_stops: {
+      // columns
+      id: number
+      uuid: string
+      created_at: string
+      updated_at: string | null
+      sequence: unknown
+      status: unknown
+      address: unknown
+      latitude: unknown
+      longitude: unknown
+      recipient_name: unknown
+      recipient_phone: unknown
+      eta_at: unknown
+      notified_nearby_at: unknown
+      arrived_at: unknown
+      completed_at: unknown
+      notes: unknown
+      delivery_route_id: number
+      order_id: number
     }
     deployments: {
       // columns
@@ -301,6 +328,21 @@ declare module '@stacksjs/database' {
       automatic_delivery: unknown
       status: unknown
     }
+    driver_pings: {
+      // columns
+      id: number
+      uuid: string
+      created_at: string
+      updated_at: string | null
+      latitude: unknown
+      longitude: unknown
+      heading: unknown
+      speed: unknown
+      accuracy: unknown
+      recorded_at: unknown
+      driver_id: number
+      delivery_route_id: number
+    }
     drivers: {
       // columns
       id: number
@@ -312,6 +354,11 @@ declare module '@stacksjs/database' {
       vehicle_number: unknown
       license: unknown
       status: unknown
+      latitude: unknown
+      longitude: unknown
+      heading: unknown
+      speed: unknown
+      last_ping_at: unknown
       user_id: number
     }
     email_list_subscribers: {
@@ -392,6 +439,21 @@ declare module '@stacksjs/database' {
       last_used_date: unknown
       template_id: unknown
       customer_id: number
+    }
+    inquiries: {
+      // columns
+      id: number
+      uuid: string
+      created_at: string
+      updated_at: string | null
+      kind: unknown
+      name: unknown
+      email: unknown
+      phone: unknown
+      subject: unknown
+      message: unknown
+      details: unknown
+      status: unknown
     }
     jobs: {
       // columns
@@ -573,6 +635,9 @@ declare module '@stacksjs/database' {
       delivery_address: unknown
       special_instructions: unknown
       estimated_delivery_time: unknown
+      tracking_token: unknown
+      delivery_latitude: unknown
+      delivery_longitude: unknown
       applied_coupon_id: unknown
       customer_id: number
       coupon_id: number
@@ -720,9 +785,19 @@ declare module '@stacksjs/database' {
       created_at: string
       updated_at: string | null
       name: unknown
+      slug: unknown
       description: unknown
       price: unknown
+      compare_at_price: unknown
+      unit_size: unknown
+      strain_type: unknown
+      thc_percentage: unknown
+      cbd_percentage: unknown
+      brand_line: unknown
       image_url: unknown
+      rating: unknown
+      review_count: unknown
+      is_featured: unknown
       is_available: unknown
       inventory_count: unknown
       preparation_time: unknown
@@ -877,6 +952,49 @@ declare module '@stacksjs/database' {
       image_url: unknown
       external_id: unknown
       user_id: number
+    }
+    specials: {
+      // columns
+      id: number
+      uuid: string
+      created_at: string
+      updated_at: string | null
+      day_of_week: unknown
+      day_label: unknown
+      title: unknown
+      offer: unknown
+      brands: unknown
+      store_slug: unknown
+      is_active: unknown
+    }
+    stores: {
+      // columns
+      id: number
+      uuid: string
+      created_at: string
+      updated_at: string | null
+      name: unknown
+      slug: unknown
+      short_name: unknown
+      address_line: unknown
+      city: unknown
+      state: unknown
+      postal_code: unknown
+      store_phone: unknown
+      delivery_phone: unknown
+      email: unknown
+      license_number: unknown
+      store_hours: unknown
+      delivery_hours: unknown
+      pickup_hours: unknown
+      amenities: unknown
+      latitude: unknown
+      longitude: unknown
+      map_url: unknown
+      image_url: unknown
+      delivery_minimum: unknown
+      display_order: unknown
+      is_active: unknown
     }
     subscriber_emails: {
       // columns

@@ -21,6 +21,7 @@ declare global {
   const loadProductReviews: typeof autoImports.loadProductReviews
   const money: typeof autoImports.money
   const telHref: typeof autoImports.telHref
+  const potency: typeof autoImports.potency
   const emptyProductReviews: typeof autoImports.emptyProductReviews
 }
 

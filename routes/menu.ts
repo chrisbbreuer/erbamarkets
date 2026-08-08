@@ -1,6 +1,7 @@
 import { log } from '@stacksjs/logging'
 import { response, route } from '@stacksjs/router'
 import { useTypesense } from '@stacksjs/search-engine'
+import { potency } from '../resources/functions/site'
 import Product from '../app/Models/Product'
 import Category from '../storage/framework/defaults/app/Models/commerce/Category'
 import Manufacturer from '../storage/framework/defaults/app/Models/commerce/Manufacturer'
@@ -55,7 +56,9 @@ function decorate(hit: MenuHit): Record<string, unknown> {
   return {
     ...hit,
     priceLabel: money(Number(hit.price) || 0),
-    thcLabel: hit.thc ? `${Number(hit.thc).toFixed(1)}%` : '',
+    // Shared with the server-rendered menu, so a gummy found through search
+    // reads "100mg" here too rather than the "100.0%" a bare percentage gives.
+    thcLabel: potency(hit.thc, hit.category),
     ratingLabel: hit.rating ? Number(hit.rating).toFixed(1) : '',
   }
 }

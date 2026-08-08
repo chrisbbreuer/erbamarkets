@@ -139,6 +139,30 @@ export interface SiteModel {
   navDeliveryMinimum: string
 }
 
+/**
+ * Categories dosed in milligrams rather than as a percentage of mass.
+ *
+ * A gummy pack is "100mg", a tincture is "25mg" — an edible has no meaningful
+ * "percent THC", because the number that matters is how much is in the piece
+ * you eat, not what fraction of the gummy's weight it is. The catalogue keeps
+ * both in one `thc_percentage` column, so the seeded 100 for a 20-pack was
+ * rendering as "THC 100.0%", which reads as the most potent product on the
+ * menu rather than five milligrams a piece.
+ */
+const MG_DOSED = new Set(['edibles', 'wellness'])
+
+/** Potency as a customer reads it: a percentage, or milligrams. */
+export function potency(value: unknown, category: string): string {
+  const amount = Number(value)
+  if (!amount)
+    return ''
+
+  return MG_DOSED.has(category)
+    // Milligrams are whole numbers on a label; nobody prints 100.0mg.
+    ? `${Number.isInteger(amount) ? amount : amount.toFixed(1)}mg`
+    : `${amount.toFixed(1)}%`
+}
+
 /** JSON columns come back as text from SQLite and as arrays from Postgres. */
 function jsonColumn(value: unknown): string[] {
   if (Array.isArray(value))
@@ -227,9 +251,11 @@ export async function loadCatalog(): Promise<{
       priceCents: row.price,
       price: money(row.price),
       wasPrice: row.compare_at_price > 0 ? money(row.compare_at_price) : '',
-      thc: row.thc_percentage ? `${Number(row.thc_percentage).toFixed(1)}%` : '',
+      thc: potency(row.thc_percentage, category),
+      // Numeric and unformatted: the menu sorts on this, and sorting has to
+      // stay within a category to mean anything anyway.
       thcValue: Number(row.thc_percentage || 0),
-      cbd: row.cbd_percentage ? `${Number(row.cbd_percentage).toFixed(1)}%` : '',
+      cbd: potency(row.cbd_percentage, category),
       image: row.image_url || '',
       rating: row.rating ? Number(row.rating).toFixed(1) : '',
       reviews: Number(row.review_count || 0),
@@ -354,6 +380,10 @@ export interface ReviewView {
   verified: boolean
   date: string
   stars: { on: boolean }[]
+  /** Pinned to the top of the list by the shop. */
+  featured: boolean
+  /** `24 found this helpful`, or empty when nobody has said so. */
+  helpfulLabel: string
 }
 
 export interface ProductReviews {
@@ -406,9 +436,21 @@ export async function loadProductReviews(productId: number): Promise<ProductRevi
 
   const reviews: ReviewView[] = rows
     .slice()
-    // Newest first. On a product that has been on the shelf a year, the review
-    // worth reading is the one describing the batch currently in the jar.
-    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    /*
+     * Featured first, then newest.
+     *
+     * `is_featured` is the shop pinning a review it wants read first, so it
+     * outranks recency; within each group the newest wins, because on a
+     * product that has been on the shelf a year the useful review is the one
+     * describing the batch currently in the jar.
+     */
+    .sort((a: any, b: any) => {
+      const pinned = Number(Boolean(b.is_featured)) - Number(Boolean(a.is_featured))
+      if (pinned !== 0)
+        return pinned
+
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
     .map((row: any) => {
       const hasRating = row.rating !== null && row.rating !== undefined
       const rating = hasRating ? Number(row.rating) : 0
@@ -428,6 +470,16 @@ export async function loadProductReviews(productId: number): Promise<ProductRevi
           ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           : '',
         stars: starRow(rating),
+        featured: Boolean(row.is_featured),
+        /*
+         * Read-only. The count is worth showing - it is how a reader decides
+         * which of forty reviews to read - but voting is a separate feature
+         * with its own abuse surface, and `commerce.products.reviews.updateVotes`
+         * is where it would go when someone wants it.
+         */
+        helpfulLabel: Number(row.helpful_votes) > 0
+          ? `${row.helpful_votes} found this helpful`
+          : '',
       }
     })
 

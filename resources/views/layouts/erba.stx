@@ -1329,6 +1329,8 @@
       .review-author { font-size: 0.85rem; font-weight: 600; }
       .review-date { font-size: 0.72rem; color: var(--muted); margin-left: auto; }
       .review-verified { border-color: var(--acid); color: var(--acid); }
+      .review-pinned { border-color: var(--paper); color: var(--paper); }
+      .review-helpful { margin-top: 0.75rem; font-size: 0.72rem; color: var(--muted); }
       .review-title { margin-top: 0.85rem; font-size: 1rem; }
       .review-body { margin-top: 0.6rem; max-width: 68ch; color: var(--muted); line-height: 1.7; }
       .review-empty { padding: 1.75rem 0; color: var(--muted); border-top: 1px solid var(--faint); border-bottom: 1px solid var(--faint); }
