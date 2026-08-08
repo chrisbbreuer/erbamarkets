@@ -43,9 +43,12 @@ export default {
   mutedColor: '#9ba09a',
   accent: '#a8d84a',
 
-  brand: 'ERBA Markets',
-  // No mark on the cards: the favicon artwork is a solid white shape, which
-  // reads as a blank white box at card scale. The wordmark carries it.
+  /*
+   * The real ERBA lockup carries the card, in place of the brand set in type.
+   * It is white artwork, which is right here: every card is drawn on the dark
+   * room background.
+   */
+  brand: '',
 
   social: {
     enabled: true,
@@ -57,6 +60,14 @@ export default {
 
     // The generators read these from the social block, not the top level.
     accent: '#a8d84a',
+    /*
+     * No mark on the cards yet. The ERBA lockup is 2:1, and ts-images reserves
+     * a SQUARE slot for the mark beside the brand text: widening the mark to
+     * its own proportions (stacks 0.70.316) makes it overrun that text rather
+     * than replacing it. Putting the logo on the card properly needs the card
+     * layout to know the mark's width, which is a change in ts-images itself.
+     */
+    brand: 'ERBA Markets',
     color: '#f3f2ed',
     mutedColor: '#9ba09a',
 

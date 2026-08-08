@@ -648,7 +648,9 @@ onMount(() => {
       <div class="shell">
         <div class="footer-grid">
           <div>
-            <a href="#top" class="wordmark">Erba</a>
+            <a href="#top" class="wordmark" aria-label="ERBA Markets, back to top">
+              <img src="/images/erba-logo.png" alt="ERBA Markets" width="1500" height="732" loading="lazy" decoding="async">
+            </a>
             <div class="footer-hours">
               <p>{{ westla.addressLine }}</p>
               <p>Los Angeles, CA 90064</p>
