@@ -1,0 +1,197 @@
+@layout('erba')
+
+@section('title'){{ product.name }} by {{ product.brand }} - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/products/{{ product.slug }}@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/menu.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * One product.
+ *
+ * An unknown slug falls back to the first available product rather than
+ * 404ing, matching how /stores/[slug] behaves: a customer who followed a stale
+ * link from a text message should land on something they can buy, not on an
+ * error page.
+ */
+const { products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum, stores } = await loadSiteModel()
+
+const requested = String((typeof slug !== 'undefined' && slug) || params?.slug || '')
+const product = products.find(item => item.slug === requested) || products[0]
+
+const pageDescription = product.description
+  ? String(product.description).slice(0, 160)
+  : `${product.name} by ${product.brand}, ${product.thc} THC. Free delivery over ${navDeliveryMinimum} across West LA.`
+
+/*
+ * Four more from the same category, which is the question someone on a
+ * product page is actually asking. Falls back to anything else in stock when
+ * the category is thin, so the rail is never a lonely single card.
+ */
+const sameCategory = products.filter(item => item.category === product.category && item.slug !== product.slug)
+const others = products.filter(item => item.category !== product.category && item.slug !== product.slug)
+const related = [...sameCategory, ...others].slice(0, 4)
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  'name': product.name,
+  'description': product.description,
+  'brand': { '@type': 'Brand', 'name': product.brand },
+  'image': product.image ? `https://erba.stacksjs.com${product.image}` : undefined,
+  'offers': {
+    '@type': 'Offer',
+    'price': (product.priceCents / 100).toFixed(2),
+    'priceCurrency': 'USD',
+    'availability': 'https://schema.org/InStock',
+  },
+})
+</script>
+
+<script client>
+/* The bag, and the shared header. Same contract as every other page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+const bagBusy = state(false)
+const added = state(false)
+
+const bagToken = useLocalStorage('erba-bag-token', '')
+const csrf = useCookie('X-CSRF-Token')
+
+/**
+ * Adds this product to the same server-side cart the menu writes to, so the
+ * bag is one bag whichever page someone happens to be on.
+ */
+async function addToBag(productSlug) {
+  if (bagBusy())
+    return
+
+  bagBusy.set(true)
+
+  try {
+    const res = await fetch('/api/bag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() || '' },
+      body: JSON.stringify({ token: bagToken() || '', productSlug, quantity: 1 }),
+    })
+
+    if (!res.ok)
+      return
+
+    const payload = await res.json()
+    if (payload?.token)
+      bagToken.set(payload.token)
+    if (typeof payload?.count === 'number')
+      bagCount.set(payload.count)
+
+    added.set(true)
+  }
+  finally {
+    bagBusy.set(false)
+  }
+}
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <div class="shell">
+          <a href="/menu">Menu</a>
+          <span aria-hidden="true">/</span>
+          <a href="/menu?category={{ product.category }}">{{ product.categoryName }}</a>
+        </div>
+      </nav>
+
+      <section class="section product-section">
+        <div class="shell product">
+          <figure class="product-figure">
+            <img src="{{ product.image }}" alt="{{ product.name }} by {{ product.brand }}" width="1200" height="1500" fetchpriority="high" decoding="async">
+          </figure>
+
+          <div class="product-body">
+            <p class="product-brand">{{ product.brand }} {{ product.brandLine }}</p>
+            <h1>{{ product.name }}</h1>
+
+            <p class="product-price mono">
+              @if (product.wasPrice)
+                <s>{{ product.wasPrice }}</s>
+              @endif
+              {{ product.price }}<span class="product-unit"> / {{ product.unit }}</span>
+            </p>
+
+            @if (product.description)
+              <p class="product-description">{{ product.description }}</p>
+            @endif
+
+            {{--
+              A short spec list rather than a bordered table: five facts do not
+              need a grid, and a hairline under every row is the tell.
+            --}}
+            <dl class="product-specs">
+              @if (product.strain)
+                <div><dt>Strain</dt><dd class="cap">{{ product.strain }}</dd></div>
+              @endif
+              @if (product.thc)
+                <div><dt>THC</dt><dd class="mono">{{ product.thc }}</dd></div>
+              @endif
+              @if (product.cbd)
+                <div><dt>CBD</dt><dd class="mono">{{ product.cbd }}</dd></div>
+              @endif
+              <div><dt>Size</dt><dd class="mono">{{ product.unit }}</dd></div>
+              <div><dt>Category</dt><dd>{{ product.categoryName }}</dd></div>
+            </dl>
+
+            <div class="product-actions">
+              <button type="button" class="btn btn-primary" :disabled="bagBusy()" @click="addToBag('{{ product.slug }}')">
+                <span :if="!added()">Add to bag</span>
+                <span :else>Added</span>
+              </button>
+              <a href="/menu" class="btn btn-ghost">Back to the menu</a>
+            </div>
+
+            <p class="product-note">Free delivery over {{ navDeliveryMinimum }} across West LA, or collect from either room.</p>
+          </div>
+        </div>
+      </section>
+
+      @if (related.length)
+        <section class="section product-related-section">
+          <div class="shell">
+            <h2 class="product-related-title">More {{ product.categoryName }}</h2>
+
+            <div class="grid product-related">
+              @foreach (related as item)
+                <a class="card" href="/products/{{ item.slug }}">
+                  <div class="card-media">
+                    <img src="{{ item.image }}" alt="{{ item.name }} by {{ item.brand }}" width="900" height="1100" loading="lazy" decoding="async">
+                    @if (item.strain)
+                      <span class="card-strain on-media">{{ item.strain }}</span>
+                    @endif
+                  </div>
+                  <p class="card-brand">{{ item.brand }}</p>
+                  <h3>{{ item.name }}</h3>
+                  <div class="card-foot">
+                    <p class="card-price mono">{{ item.price }}<span class="card-unit"> / {{ item.unit }}</span></p>
+                  </div>
+                </a>
+              @endforeach
+            </div>
+          </div>
+        </section>
+      @endif
+    </main>
+
+    @include('site-footer')
+
+    <script type="application/ld+json">{!! jsonLd !!}</script>
+  </div>
+</template>
+@endsection

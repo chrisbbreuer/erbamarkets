@@ -365,8 +365,15 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
         -->
         <div class="grid menu-grid" :hidden="view() !== 'grid'">
           @foreach (products as product)
-            <article
+            {{--
+              An anchor, not an article with a click handler: a card that
+              navigates should be openable in a new tab, followable by a
+              crawler, and reachable by keyboard without any of that being
+              rebuilt by hand.
+            --}}
+            <a
               class="card"
+              href="/products/{{ product.slug }}"
               data-cat="{{ product.category }}"
               :hidden="!shows('{{ product.id }}', '{{ product.category }}', {{ brandJson(product.brand) }}, '{{ product.strain }}')"
             >
@@ -385,7 +392,7 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
                   <span class="card-unit">/ {{ product.unit }}</span>
                 </p>
               </div>
-            </article>
+            </a>
           @endforeach
         </div>
 
