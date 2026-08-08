@@ -1,14 +1,15 @@
 import { route } from '@stacksjs/router'
+import Product from '../app/Models/Product'
 import Store from '../app/Models/Store'
 
 /**
  * The two files a crawler asks for before it reads anything else.
  *
  * These are routes rather than static files in `public/` because the sitemap
- * has to know which store pages exist, and that is a database question. A
- * checked-in XML file would be correct on the day it was written and wrong the
- * first time a third room opens - and nothing would fail, the page would just
- * quietly never be indexed.
+ * has to know which store and product pages exist, and that is a database
+ * question. A checked-in XML file would be correct on the day it was written
+ * and wrong the first time a product is added - and nothing would fail, the
+ * page would just quietly never be indexed.
  *
  * Registered at the root by `app/Routes.ts` under the `web` key, which is the
  * one key the route loader mounts without a prefix. The views server forwards
@@ -70,13 +71,34 @@ function xmlEscape(value: string): string {
 }
 
 route.get('/sitemap.xml', async () => {
-  const stores = await Store.where('is_active', true).orderBy('display_order', 'asc').get()
+  const [stores, products] = await Promise.all([
+    Store.where('is_active', true).orderBy('display_order', 'asc').get(),
+    Product.where('is_available', true).orderBy('name', 'asc').get(),
+  ])
 
   const entries = [
     ...PAGES,
     ...stores.map((store: any) => ({
       path: `/stores/${store.slug}`,
       changefreq: 'monthly',
+      priority: '0.8',
+    })),
+    /*
+     * Every product on the menu.
+     *
+     * These are the pages worth indexing most: each one carries its own
+     * structured data, its own reviews, and the long-tail search a category
+     * page never answers - somebody looking for one strain by name in West LA
+     * lands here or nowhere.
+     *
+     * Only what is actually in stock. A sold-out product's page is not
+     * reachable from the menu and answers 404, and listing a 404 in a sitemap
+     * is how a site teaches a crawler to trust it less.
+     */
+    ...products.map((product: any) => ({
+      path: `/products/${product.slug}`,
+      // Prices and potency move with the batch.
+      changefreq: 'weekly',
       priority: '0.8',
     })),
   ]
