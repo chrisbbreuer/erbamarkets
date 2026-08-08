@@ -437,9 +437,9 @@ onMount(() => {
       <section class="hero">
         <div class="shell hero-inner">
           <div class="hero-copy">
-            <h1 class="rise">The premier cannabis destination in Los Angeles</h1>
+            <h1 class="rise">The premier cannabis destination in Los&nbsp;Angeles</h1>
             <p class="hero-sub rise rise-2">
-              Two rooms in West LA, free delivery over {{ westla.deliveryMinimum }}, and curbside pickup.
+              Two West LA dispensaries, free delivery over {{ westla.deliveryMinimum }}, and curbside pickup.
             </p>
             <div class="hero-actions rise rise-3">
               <a href="/menu" class="btn btn-primary">Order online</a>
@@ -557,7 +557,7 @@ onMount(() => {
       <section id="locations" class="section" style="background: var(--ink-sunken);">
         <div class="shell">
           <div class="section-head reveal">
-            <h2>Two rooms in West LA</h2>
+            <h2>Two dispensaries in West LA</h2>
           </div>
 
           <div class="stores">

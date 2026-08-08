@@ -110,7 +110,6 @@
         --photo: saturate(0.9) contrast(1.02);
         --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%235b615a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         --logo-plate: #0b0d0c;
-        --logo-pad: 0.5rem 0.75rem;
       }
 
       html.dark {
@@ -138,7 +137,6 @@
         --photo: saturate(0.82) contrast(1.06);
         --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%239ba09a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         --logo-plate: transparent;
-        --logo-pad: 0;
       }
 
       :root {
@@ -312,7 +310,14 @@
         flex: 0 0 auto;
         display: inline-flex;
         align-items: center;
-        padding: var(--logo-pad);
+        /*
+         * Constant in both themes. When the padding arrived with the plate,
+         * the wordmark's box changed size on toggle and the whole nav row
+         * shifted, which reads as the layout jumping rather than the theme
+         * changing. Only the fill differs.
+         */
+        padding: 0.5rem 0.75rem;
+        margin-left: -0.75rem;
         background: var(--logo-plate);
       }
       .wordmark img {
