@@ -90,6 +90,9 @@ const navBrands = Object.entries(productsPerBrand)
   .slice(0, 6)
   .map(([name, count]) => ({ name, count, query: encodeURIComponent(name) }))
 
+/* Slug to display name, so the category chip can print "Pre-Rolls" not "pre-rolls". */
+const categoryNames = Object.fromEntries(categories.map(category => [category.slug, category.name]))
+
 const navFeature = products.find(product => product.image) || null
 const navProductCount = products.length
 const navDeliveryMinimum = (stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]).deliveryMinimum
@@ -226,6 +229,19 @@ function shows(id, category, brand, strain) {
   return true
 }
 
+/* The chip prints the category's real name; `all` never renders a chip. */
+function categoryLabel(slug) {
+  return categoryNames[slug] || slug
+}
+
+/* Clearing the search has to reset the engine result set too, not just the box. */
+function clearSearch() {
+  query.set('')
+  matchedIds.set(null)
+  engineUsed.set('')
+  searchFailed.set(false)
+}
+
 function setCategory(slug) {
   activeCategory.set(slug)
   if (query().trim()) runSearch()
@@ -287,25 +303,35 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
           </div>
 
           <div class="menu-selects">
-            <label class="menu-select">
-              <span class="sr-only">Brand</span>
-              <select aria-label="Filter by brand" @change="activeBrand.set($event.target.value)">
+            <div class="menu-select">
+              <label class="sr-only" for="filter-brand">Brand</label>
+              <select
+                id="filter-brand"
+                aria-label="Filter by brand"
+                :value="activeBrand()"
+                @change="activeBrand.set($event.target.value)"
+              >
                 <option value="">All brands</option>
                 @foreach (brandsInStock as brand)
                   <option value="{{ brand }}">{{ brand }}</option>
                 @endforeach
               </select>
-            </label>
+            </div>
 
-            <label class="menu-select">
-              <span class="sr-only">Strain</span>
-              <select aria-label="Filter by strain" @change="activeStrain.set($event.target.value)">
+            <div class="menu-select">
+              <label class="sr-only" for="filter-strain">Strain</label>
+              <select
+                id="filter-strain"
+                aria-label="Filter by strain"
+                :value="activeStrain()"
+                @change="activeStrain.set($event.target.value)"
+              >
                 <option value="">All strains</option>
                 @foreach (strains as strain)
                   <option value="{{ strain }}">{{ strain }}</option>
                 @endforeach
               </select>
-            </label>
+            </div>
 
             <div class="menu-view" role="group" aria-label="View">
               <button type="button" :aria-pressed="view() === 'grid' ? 'true' : 'false'" @click="view.set('grid')">Grid</button>
@@ -328,6 +354,30 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
               {{ category.name }}
             </button>
           @endforeach
+        </div>
+
+        <div class="menu-active" :hidden="!filtersActive()">
+          <span class="menu-active-label">Filtering by</span>
+
+          <button type="button" class="menu-chip" :if="activeCategory() !== 'all'" @click="setCategory('all')">
+            <span class="chip-key">Category</span>{{ categoryLabel(activeCategory()) }}<span class="chip-x" aria-hidden="true">&times;</span>
+            <span class="sr-only">Remove the category filter</span>
+          </button>
+
+          <button type="button" class="menu-chip" :if="activeBrand()" @click="activeBrand.set('')">
+            <span class="chip-key">Brand</span>{{ activeBrand() }}<span class="chip-x" aria-hidden="true">&times;</span>
+            <span class="sr-only">Remove the brand filter</span>
+          </button>
+
+          <button type="button" class="menu-chip" :if="activeStrain()" @click="activeStrain.set('')">
+            <span class="chip-key">Strain</span>{{ activeStrain() }}<span class="chip-x" aria-hidden="true">&times;</span>
+            <span class="sr-only">Remove the strain filter</span>
+          </button>
+
+          <button type="button" class="menu-chip" :if="query().trim()" @click="clearSearch()">
+            <span class="chip-key">Search</span>{{ query() }}<span class="chip-x" aria-hidden="true">&times;</span>
+            <span class="sr-only">Clear the search</span>
+          </button>
         </div>
 
         <p class="menu-meta">

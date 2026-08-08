@@ -77,12 +77,14 @@
          * contrast that passes for both body copy and button fills.
          */
         --acid: #4f7d0e;
+        --acid-rgb: 79 125 14;
         --acid-dim: #3f6609;
         --acid-hover: #5f9412;
         --on-acid: #ffffff;
         --on-acid-rgb: 255 255 255;
 
         --photo: saturate(0.9) contrast(1.02);
+        --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%235b615a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       }
 
       html.dark {
@@ -95,6 +97,7 @@
         --muted: #9ba09a;
 
         --acid: #a8d84a;
+        --acid-rgb: 168 216 74;
         --acid-dim: #7fae2c;
         --acid-hover: #b9e563;
         --on-acid: #0b0d0c;
@@ -107,6 +110,7 @@
          * colour of the flower is information, not decoration.
          */
         --photo: saturate(0.82) contrast(1.06);
+        --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%239ba09a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       }
 
       :root {
@@ -298,7 +302,23 @@
 
       /* ---------- mega menu ---------- */
       .nav-links { align-items: center; }
+      /*
+       * The panel hangs 72px below the trigger, and the pointer has to cross
+       * that gap to reach it. `mouseleave` on the wrapper fired the moment the
+       * cursor left the trigger's own box, so the menu closed before it could
+       * be used. A pseudo-element bridges the gap, and the wrapper's hover
+       * area covers the full nav height, so the pointer never leaves.
+       */
       .mega { position: static; }
+      .mega-trigger { position: relative; height: 72px; }
+      .mega-trigger::after {
+        content: '';
+        position: absolute;
+        left: -1rem;
+        right: -1rem;
+        top: 100%;
+        height: 1.25rem;
+      }
       .mega-trigger {
         display: inline-flex;
         align-items: center;
@@ -402,8 +422,87 @@
         .mega-caret, .mega-feature-media img { transition: none; }
       }
 
+      /* ---------- specials page ---------- */
+      .section.specials-head { padding-top: 3.25rem; padding-bottom: 0; }
+      .specials-head h1 { margin-top: 1.1rem; font-size: clamp(2rem, 4.6vw, 3.6rem); text-transform: uppercase; max-width: 16ch; }
+      .specials-intro { margin-top: 1.25rem; }
+
+      /*
+       * Today is the only actionable row, so it is the only one built as a
+       * feature block. The rest of the week is a list.
+       */
+      .section.specials-today-section { padding-top: 2.75rem; padding-bottom: 0; }
+      .specials-today {
+        display: grid;
+        gap: 2.5rem;
+        padding: clamp(2rem, 4vw, 3.25rem);
+        border: 1px solid rgb(var(--acid-rgb) / 0.4);
+        background: rgb(var(--acid-rgb) / 0.07);
+      }
+      @media (min-width: 900px) { .specials-today { grid-template-columns: 1.5fr 1fr; gap: 4rem; align-items: start; } }
+      .specials-today-flag {
+        font-family: 'Geist Mono', ui-monospace, monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgb(var(--acid-rgb));
+      }
+      .specials-today h2 { margin-top: 1rem; font-size: clamp(1.9rem, 4vw, 3rem); text-transform: uppercase; }
+      .specials-today-offer { margin-top: 1.1rem; font-size: 1.1rem; max-width: 40ch; }
+      .specials-actions { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+      .specials-today-brands h3 {
+        font-family: 'Geist Mono', ui-monospace, monospace;
+        font-size: 0.66rem;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .specials-brand-list {
+        margin: 1.25rem 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.6rem;
+        font-size: 1rem;
+      }
+      .specials-store { margin-top: 0.9rem; font-size: 0.85rem; color: var(--muted); }
+
+      .section.specials-week-section { padding-top: clamp(3.5rem, 7vw, 5.5rem); }
+      .specials-week-title { font-size: clamp(1.6rem, 3vw, 2.4rem); text-transform: uppercase; }
+      .specials-week { margin: 2.5rem 0 0; padding: 0; list-style: none; border-top: 1px solid var(--faint); }
+      .specials-row {
+        display: grid;
+        gap: 1rem;
+        padding: 2rem 0;
+        border-bottom: 1px solid var(--faint);
+      }
+      @media (min-width: 900px) { .specials-row { grid-template-columns: 10rem 1.4fr 1fr; gap: 3rem; align-items: baseline; } }
+      .specials-day {
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .specials-row-body h3 { font-size: 1.35rem; text-transform: uppercase; }
+      .specials-offer { margin-top: 0.7rem; color: var(--muted); max-width: 46ch; }
+      .specials-brands { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+      .specials-brands li {
+        padding: 0.3rem 0.75rem;
+        border: 1px solid var(--faint-strong);
+        border-radius: 999px;
+        font-size: 0.66rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .specials-foot { display: grid; gap: 1.25rem; justify-items: start; max-width: 46ch; }
+      .specials-foot h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); text-transform: uppercase; }
+      .specials-foot .btn { margin-top: 0.5rem; }
+
       /* ---------- sign in ---------- */
-      .login-section { min-height: 100dvh; display: grid; place-items: center; }
+      .section.login-section { min-height: 100dvh; display: grid; place-items: center; padding-block: 4rem; }
       .login-shell { width: min(420px, 100%); }
       .login-shell h1 { margin-top: 1.1rem; font-size: clamp(2rem, 5vw, 2.75rem); text-transform: uppercase; }
       .login-note { margin-top: 1rem; }
@@ -414,12 +513,12 @@
       .login-welcome { font-size: 1.15rem; font-weight: 600; color: var(--acid); }
 
       /* ---------- menu page ---------- */
-      .menu-head-section { padding-top: 4rem; padding-bottom: 0; }
+      .section.menu-head-section { padding-top: 3.25rem; padding-bottom: 0; }
       .menu-head { margin-top: 1.1rem; display: flex; flex-direction: column; gap: 1.1rem; }
       .menu-head h1 { font-size: clamp(2rem, 4.6vw, 3.6rem); text-transform: uppercase; max-width: 18ch; }
 
       .menu-controls {
-        margin-top: 2.75rem;
+        margin-top: 2.25rem;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -461,23 +560,14 @@
       }
 
       .menu-selects { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
-      .menu-select select {
-        padding: 0.85rem 1rem;
-        border: 1px solid var(--faint-strong);
-        border-radius: 0;
-        background: var(--ink-raised);
-        color: var(--paper);
-        font: inherit;
-        font-size: 0.85rem;
-        cursor: pointer;
-      }
-      .menu-select select:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
 
+      /* Grid / Table toggle. Same pill language as the category filters. */
       .menu-view { display: inline-flex; border: 1px solid var(--faint-strong); border-radius: 999px; overflow: hidden; }
       .menu-view button {
-        padding: 0.7rem 1.2rem;
+        padding: 0.7rem 1.15rem;
         border: 0;
         background: transparent;
+        font: inherit;
         font-size: 0.72rem;
         font-weight: 600;
         letter-spacing: 0.14em;
@@ -487,7 +577,82 @@
         transition: color 0.18s var(--ease), background-color 0.18s var(--ease);
       }
       .menu-view button:hover { color: var(--paper); }
-      .menu-view button[aria-pressed='true'] { background: var(--acid); color: var(--on-acid); }
+      .menu-view button[aria-pressed='true'] { background: rgb(var(--acid-rgb)); color: rgb(var(--on-acid-rgb)); }
+      /*
+       * The native chevron sits tight against the right edge and cannot be
+       * spaced, so it is switched off and redrawn as a background image with
+       * real padding around it.
+       */
+      .menu-select { position: relative; display: inline-flex; }
+      .menu-select select {
+        appearance: none;
+        -webkit-appearance: none;
+        padding: 0.85rem 3rem 0.85rem 1.1rem;
+        border: 1px solid var(--faint-strong);
+        border-radius: 0;
+        background-color: var(--ink-raised);
+        background-image: var(--chevron);
+        background-repeat: no-repeat;
+        background-position: right 1.1rem center;
+        background-size: 0.7rem;
+        color: var(--paper);
+        font: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: border-color 0.18s var(--ease), color 0.18s var(--ease);
+      }
+      .menu-select select:hover { border-color: var(--paper); }
+      .menu-select select:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
+
+      /*
+       * A select with something chosen has to look chosen. Without this the
+       * only difference between "All brands" and an active brand filter is the
+       * word itself, which is easy to miss and leaves people wondering why the
+       * menu is short.
+       */
+      /*
+       * A select cannot be relied on to show its own active state: the same
+       * rule's background-color and font-weight apply while border-color and
+       * color are dropped by the control's native rendering. So the state
+       * lives outside it, as a row of removable chips that names every active
+       * filter at once and can be cleared one at a time.
+       */
+      .menu-active { margin-top: 1.1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+      .menu-active[hidden] { display: none; }
+      .menu-active-label {
+        font-family: 'Geist Mono', ui-monospace, monospace;
+        font-size: 0.66rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .menu-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0.5rem 0.45rem 0.9rem;
+        border: 1px solid rgb(var(--acid-rgb) / 0.45);
+        border-radius: 999px;
+        background: rgb(var(--acid-rgb) / 0.12);
+        font: inherit;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: rgb(var(--acid-rgb));
+        cursor: pointer;
+        transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease);
+      }
+      .menu-chip:hover { background: rgb(var(--acid-rgb) / 0.2); border-color: rgb(var(--acid-rgb)); }
+      .menu-chip .chip-key { font-weight: 400; opacity: 0.75; }
+      .menu-chip .chip-x {
+        display: grid;
+        place-items: center;
+        width: 1.1rem;
+        height: 1.1rem;
+        border-radius: 999px;
+        background: rgb(var(--acid-rgb) / 0.22);
+        font-size: 0.8rem;
+        line-height: 1;
+      }
 
       .menu-filters { margin-top: 1.25rem; }
       .menu-meta {
@@ -513,7 +678,7 @@
       }
       .menu-empty { padding: 5rem 0; text-align: center; color: var(--muted); }
 
-      .menu-results-section { padding-top: 3rem; }
+      .section.menu-results-section { padding-top: 2.5rem; }
       .menu-grid { margin-top: 0; }
       .menu-grid[hidden], .menu-table-wrap[hidden] { display: none; }
 

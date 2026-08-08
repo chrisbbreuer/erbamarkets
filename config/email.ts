@@ -34,27 +34,28 @@ export default {
    * - Full emails: ['chris@stacksjs.com']
    * - Objects: [{ email: 'chris', password: '...' }]
    */
-  mailboxes: [
-    'chris',
-    'blake',
-    'glenn',
-  ],
+  /*
+   * No mailboxes and no forwards: this is a functional demo, so nothing here
+   * should be provisioning real inboxes or rewriting mail DNS. Every deploy
+   * was otherwise trying to issue a cert for mail.erba.stacksjs.com and
+   * publish MX, SPF, DKIM and DMARC records for a domain that sends no mail.
+   */
+  mailboxes: [],
 
   /**
    * Role inboxes retain their own copy and forward one to Chris.
    * The mail deploy also writes the matching bare local-part keys because
    * these addresses currently use legacy role mailboxes on the shared server.
    */
-  forwards: {
-    'socials@stacksjs.com': ['chris@stacksjs.com'],
-    'hi@stacksjs.com': ['chris@stacksjs.com'],
-  },
+  forwards: {},
 
   url: env.APP_URL || 'https://stacksjs.com',
   charset: 'UTF-8',
 
   server: {
-    enabled: true,
+    // Off for the demo. Turn this back on when the storefront needs to send
+    // order confirmations from its own domain rather than the box owner's.
+    enabled: false,
     scan: true, // scans for spam and viruses
     subdomain: 'mail', // mail.stacksjs.com
 

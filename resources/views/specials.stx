@@ -1,0 +1,202 @@
+@layout('erba')
+
+@section('title')Weekly specials - ERBA Markets West Los Angeles@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('content')
+<script server>
+/**
+ * The deal calendar.
+ *
+ * Seven days is a week, not seven equal cards. The page leads with whichever
+ * day it actually is, because that is the only one a customer standing in the
+ * room can act on, and lists the rest underneath so they can plan.
+ *
+ * The day is computed in Los Angeles time. Reading the server's clock would
+ * put a customer in LA on Monday's deal while it is still Sunday evening for
+ * them, or the reverse, depending on where the box happens to run.
+ */
+const pageDescription = 'A deal every day of the week at ERBA Markets, from Tank Tuesday to Fresh Fruit Cup Friday. Free delivery over $30 across West LA.'
+
+const money = (cents) => `$${(cents / 100).toFixed(2).replace(/\.00$/, '')}`
+
+const storeRows = await Store.where('is_active', true).orderBy('display_order', 'asc').get()
+const stores = storeRows.map(row => ({
+  slug: row.slug,
+  shortName: row.short_name,
+  addressLine: row.address_line,
+  deliveryMinimum: money(row.delivery_minimum * 100),
+}))
+
+const laToday = new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'long' })
+
+const specialRows = await Special.where('is_active', true).get()
+const dayOrder = [1, 2, 3, 4, 5, 6, 0]
+const allSpecials = specialRows
+  .slice()
+  .sort((a, b) => dayOrder.indexOf(a.day_of_week) - dayOrder.indexOf(b.day_of_week))
+  .map(row => ({
+    day: row.day_label,
+    short: String(row.day_label).slice(0, 3),
+    title: row.title,
+    offer: row.offer,
+    brands: JSON.parse(row.brands || '[]'),
+    storeOnly: row.store_slug ? (stores.find(store => store.slug === row.store_slug)?.shortName || '') : '',
+    isToday: row.day_label === laToday,
+  }))
+
+const todaySpecial = allSpecials.find(special => special.isToday) || null
+const restOfWeek = allSpecials.filter(special => !special.isToday)
+
+/* Nav model, same five names the shared header reads. */
+const categoryRows = await Category.where('is_active', true).orderBy('display_order', 'asc').get()
+const categories = categoryRows.map(row => ({ name: row.name, slug: row.slug }))
+const productRows = await Product.where('is_available', true).orderBy('is_featured', 'desc').get()
+const categorySlugById = new Map(categoryRows.map(row => [row.id, row.slug]))
+const brandRows = await Manufacturer.query().get()
+const brandNameById = new Map(brandRows.map(row => [row.id, row.manufacturer]))
+
+const products = productRows.map(row => ({
+  name: row.name,
+  category: categorySlugById.get(row.category_id) || 'flower',
+  brand: brandNameById.get(row.manufacturer_id) || '',
+  price: money(row.price),
+  image: row.image_url,
+}))
+
+const countBy = (key) => products.reduce((acc, product) => {
+  acc[product[key]] = (acc[product[key]] || 0) + 1
+  return acc
+}, {})
+
+const productsPerCategory = countBy('category')
+const navCategories = categories
+  .filter(category => productsPerCategory[category.slug] > 0)
+  .map(category => ({ ...category, count: productsPerCategory[category.slug] }))
+
+const productsPerBrand = countBy('brand')
+const navBrands = Object.entries(productsPerBrand)
+  .filter(([name]) => name)
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .slice(0, 6)
+  .map(([name, count]) => ({ name, count, query: encodeURIComponent(name) }))
+
+const navFeature = products.find(product => product.image) || null
+const navProductCount = products.length
+const navDeliveryMinimum = (stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]).deliveryMinimum
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  'name': 'ERBA Markets weekly specials',
+  'itemListElement': allSpecials.map((special, index) => ({
+    '@type': 'ListItem',
+    'position': index + 1,
+    'name': `${special.day}: ${special.title}`,
+    'description': special.offer,
+  })),
+})
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="section specials-head">
+        <div class="shell">
+          <p class="eyebrow">Every day of the week</p>
+          <h1>A reason to come in, seven days a week</h1>
+          <p class="section-note specials-intro">
+            Deals run all day at both rooms unless a day says otherwise. Stacking is not
+            a thing, so you get whichever discount is larger.
+          </p>
+        </div>
+      </section>
+
+      @if (todaySpecial)
+        {{--
+          Today gets its own block. It is the only row a customer can act on
+          right now, so it is the only one that gets display type and a CTA.
+        --}}
+        <section class="section specials-today-section" aria-labelledby="today-title">
+          <div class="shell">
+            <article class="specials-today">
+              <div class="specials-today-copy">
+                <p class="specials-today-flag">Today, {{ todaySpecial.day }}</p>
+                <h2 id="today-title">{{ todaySpecial.title }}</h2>
+                <p class="specials-today-offer">{{ todaySpecial.offer }}</p>
+
+                @if (todaySpecial.storeOnly)
+                  <p class="specials-store">At {{ todaySpecial.storeOnly }} only.</p>
+                @endif
+
+                <div class="specials-actions">
+                  <a href="/menu" class="btn btn-primary">Order online</a>
+                  <a href="/#locations" class="btn btn-ghost">Find a store</a>
+                </div>
+              </div>
+
+              <div class="specials-today-brands">
+                <h3>On the deal today</h3>
+                <ul class="specials-brand-list">
+                  @foreach (todaySpecial.brands as brand)
+                    <li>{{ brand }}</li>
+                  @endforeach
+                </ul>
+              </div>
+            </article>
+          </div>
+        </section>
+      @endif
+
+      <section class="section specials-week-section" aria-labelledby="week-title">
+        <div class="shell">
+          <h2 id="week-title" class="specials-week-title">The rest of the week</h2>
+
+          <ol class="specials-week">
+            @foreach (restOfWeek as special)
+              <li class="specials-row">
+                <p class="specials-day mono">{{ special.day }}</p>
+                <div class="specials-row-body">
+                  <h3>{{ special.title }}</h3>
+                  <p class="specials-offer">{{ special.offer }}</p>
+                  @if (special.storeOnly)
+                    <p class="specials-store">At {{ special.storeOnly }} only.</p>
+                  @endif
+                </div>
+                <ul class="specials-brands">
+                  @foreach (special.brands as brand)
+                    <li>{{ brand }}</li>
+                  @endforeach
+                </ul>
+              </li>
+            @endforeach
+          </ol>
+        </div>
+      </section>
+
+      <section class="section specials-foot-section">
+        <div class="shell specials-foot">
+          <h2>Deals change. The menu is live.</h2>
+          <p class="section-note">
+            Prices on the menu already include the day's discount, so what you see is
+            what you pay. Free delivery over {{ navDeliveryMinimum }}.
+          </p>
+          <a href="/menu" class="btn btn-primary">Browse the menu</a>
+        </div>
+      </section>
+    </main>
+
+    <script type="application/ld+json">{!! jsonLd !!}</script>
+  </div>
+</template>
+@endsection
