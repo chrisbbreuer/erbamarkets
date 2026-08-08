@@ -44,6 +44,9 @@ jobs:
         env:
           APP_ENV: production
           APP_KEY: ${{ secrets.APP_KEY }}
+          # The deploy resolves the box through the Hetzner API even when it is
+          # attaching to an existing one rather than provisioning.
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
           # Scoped to the erba_products collection. The box's Typesense is
           # shared with other tenants, so the admin key must never come here.
           TYPESENSE_API_KEY_PROD: ${{ secrets.TYPESENSE_API_KEY_PROD }}
