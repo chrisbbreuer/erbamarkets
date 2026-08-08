@@ -38,6 +38,12 @@ jobs:
           chmod 700 ~/.ssh
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+          # ts-cloud reads the public half off disk to register the key with
+          # the server, so it has to be there as well as the private one.
+          # Derived rather than stored as a second secret: it is the same key,
+          # and two secrets that must agree will eventually disagree.
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > ~/.ssh/id_ed25519.pub
+          chmod 644 ~/.ssh/id_ed25519.pub
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy
