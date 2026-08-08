@@ -11,6 +11,12 @@ import type { RouteRegistry } from '@stacksjs/router'
 export type { RouteDefinition, RouteRegistry } from '@stacksjs/router'
 
 export default {
+  // Root-level files a crawler asks for: /sitemap.xml and /robots.txt. `web`
+  // is the one key the loader mounts without a prefix. Both are listed under
+  // `proxy.paths` in config/server.ts so the views server forwards them here
+  // rather than looking for a page.
+  'web': 'web',
+
   // Storefront: bag, checkout, VIP signup.
   'api': 'api',
 
