@@ -585,6 +585,27 @@
       .login-note { margin-top: 1rem; }
       .login-form { margin-top: 2.5rem; display: grid; gap: 1.25rem; }
       .login-form .field span { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+      .login-social { margin-top: 2.25rem; display: grid; gap: 0.6rem; }
+      .login-social-btn { width: 100%; justify-content: center; gap: 0.65rem; }
+      .login-social-icon { width: 1.05rem; height: 1.05rem; flex: 0 0 auto; }
+
+      /* Hairline with the label sitting in a gap, rather than text on a rule. */
+      .login-divider {
+        margin-top: 1.75rem;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 0.9rem;
+        font-size: 0.68rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .login-divider::before, .login-divider::after { content: ''; height: 1px; background: var(--faint-strong); }
+
+      .field-hint { font-size: 0.75rem; color: var(--muted); }
+      .login-alt { margin-top: 0.5rem; font-size: 0.85rem; color: var(--muted); }
+      .login-alt a { color: rgb(var(--acid-rgb)); text-decoration: underline; text-underline-offset: 3px; }
       .login-error { font-size: 0.85rem; color: #ff6b6b; }
       .login-done { margin-top: 2.5rem; display: grid; gap: 1rem; justify-items: start; }
       .login-welcome { font-size: 1.15rem; font-weight: 600; color: var(--acid); }

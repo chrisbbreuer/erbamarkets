@@ -13,10 +13,12 @@ import { route } from '@stacksjs/router'
  * `/api/logout`. The delivery routes gate on `middleware('auth')` and accept
  * the token these mint.
  *
- * There is deliberately no public registration route. This is a dispensary
- * storefront; staff accounts are created with `./buddy account:create`.
+ * Registration is open because the customer account is what the bag, the order
+ * history and the delivery tracking hang off. Staff accounts are still made
+ * with `./buddy account:create`; the two differ by role, not by signup path.
  */
 route.post('/login', 'Actions/Auth/LoginAction')
+route.post('/register', 'Actions/Auth/RegisterAction')
 route.post('/logout', 'Actions/Auth/LogoutAction').middleware('auth')
 
 /** Who am I: lets the login page confirm the session actually took. */

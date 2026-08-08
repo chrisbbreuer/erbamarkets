@@ -31,7 +31,7 @@ export default {
   google: {
     clientId: String(env.GOOGLE_CLIENT_ID || ''),
     clientSecret: String(env.GOOGLE_CLIENT_SECRET || ''),
-    redirectUrl: String(env.GOOGLE_REDIRECT_URL || 'http://localhost:3000/auth/google/callback'),
+    redirectUrl: String(env.GOOGLE_REDIRECT_URL || 'http://localhost:3000/api/auth/google/callback'),
     scopes: ['profile', 'email'],
   },
 
@@ -43,7 +43,7 @@ export default {
     teamId: String(env.APPLE_TEAM_ID || ''),
     keyId: String(env.APPLE_KEY_ID || ''),
     privateKey: String(env.APPLE_PRIVATE_KEY || ''), // literal \n newlines allowed
-    redirectUrl: String(env.APPLE_REDIRECT_URL || 'http://localhost:3000/auth/apple/callback'),
+    redirectUrl: String(env.APPLE_REDIRECT_URL || 'http://localhost:3000/api/auth/apple/callback'),
     scopes: ['name', 'email'],
   },
 

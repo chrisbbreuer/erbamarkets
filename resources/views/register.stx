@@ -1,0 +1,196 @@
+@layout('erba')
+
+@section('title')Create an account - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/register@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/login.jpg@endsection
+
+@section('content')
+<script server>
+/*
+ * Nothing is read from the database here. A signup page that queries anything
+ * gives an unauthenticated visitor a lever to pull.
+ */
+const pageDescription = 'Create an ERBA Markets account to track orders, save your address and check out faster.'
+
+/* Same required-key sets @stacksjs/socials checks; see the note on /login. */
+const hasAll = (keys) => keys.every(key => String(process.env[key] || '').trim() !== '')
+
+const socialProviders = [
+  { name: 'google', label: 'Google', keys: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL'] },
+  { name: 'apple', label: 'Apple', keys: ['APPLE_CLIENT_ID', 'APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY', 'APPLE_REDIRECT_URL'] },
+].filter(provider => hasAll(provider.keys))
+
+const hasSocial = socialProviders.length > 0
+
+/** Mirrors the framework's password policy so the form states the same rule. */
+const passwordMinLength = 8
+</script>
+
+<script client>
+/**
+ * Signup posts to /api/register, which is the framework's RegisterAction. It
+ * applies the password policy, hashes through the same path the login route
+ * verifies against, and returns the OAuth2-shaped token pack with a refresh
+ * token, so a brand-new account is not signed out an hour into its first
+ * session.
+ *
+ * Validation is echoed here before the request goes out, so someone gets told
+ * their password is too short without a round trip. The server is still the
+ * authority; this is only there to save the trip.
+ */
+const name = state('')
+const email = state('')
+const password = state('')
+const busy = state(false)
+const message = state('')
+const createdAs = state('')
+
+const csrf = useCookie('X-CSRF-Token')
+
+function localProblem() {
+  if (name().trim().length < 2)
+    return 'Please give us a name we can put on the order.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email().trim()))
+    return 'That email address does not look right.'
+  if (password().length < 8)
+    return 'Password must be at least 8 characters.'
+  return ''
+}
+
+async function createAccount(event) {
+  event.preventDefault()
+
+  if (busy())
+    return
+
+  const problem = localProblem()
+  if (problem) {
+    message.set(problem)
+    return
+  }
+
+  busy.set(true)
+  message.set('')
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrf() || '',
+      },
+      body: JSON.stringify({ name: name().trim(), email: email().trim(), password: password() }),
+    })
+
+    if (!res.ok) {
+      // 409 is the address already having an account, 422 is the policy
+      // rejecting the details. Both are worth naming; anything else stays
+      // generic rather than leaking server detail.
+      if (res.status === 409)
+        message.set('That email already has an account. Sign in instead.')
+      else if (res.status === 422)
+        message.set('Check the details. The password must be at least 8 characters.')
+      else
+        message.set('Could not create the account. Try again in a moment.')
+      return
+    }
+
+    const payload = await res.json()
+    createdAs.set(payload?.user?.name || payload?.user?.email || 'you')
+  }
+  catch (error) {
+    message.set('Could not reach the server. Try again in a moment.')
+  }
+  finally {
+    busy.set(false)
+  }
+}
+</script>
+
+<template>
+  <div data-stx-content>
+    <main class="section login-section">
+      <div class="shell login-shell">
+        <p class="eyebrow">ERBA account</p>
+        <h1>Create an account</h1>
+        <p class="section-note login-note">
+          Track your order, save an address, and check out faster next time.
+        </p>
+
+        @if (hasSocial)
+          <div class="login-social">
+            @foreach (socialProviders as provider)
+              <a class="btn btn-ghost login-social-btn" href="/api/auth/{{ provider.name }}">
+                <span class="login-social-icon i-hugeicons-{{ provider.name }}" aria-hidden="true"></span>
+                Continue with {{ provider.label }}
+              </a>
+            @endforeach
+          </div>
+
+          <p class="login-divider"><span>or use your email</span></p>
+        @endif
+
+        <form class="login-form" @submit="createAccount($event)" :if="!createdAs()">
+          <label class="field">
+            <span>Name</span>
+            <input
+              type="text"
+              name="name"
+              autocomplete="name"
+              required
+              :value="name()"
+              @input="name.set($event.target.value)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              autocomplete="email"
+              required
+              :value="email()"
+              @input="email.set($event.target.value)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <input
+              type="password"
+              name="password"
+              autocomplete="new-password"
+              required
+              :value="password()"
+              @input="password.set($event.target.value)"
+            />
+            <span class="field-hint">At least {{ passwordMinLength }} characters.</span>
+          </label>
+
+          <p class="login-error" role="alert" :if="message()">{{ message() }}</p>
+
+          <button type="submit" class="btn btn-primary" :disabled="busy()">
+            <span :if="!busy()">Create account</span>
+            <span :else>Creating</span>
+          </button>
+
+          <p class="login-alt">
+            Already have an account? <a href="/login">Sign in</a>.
+          </p>
+        </form>
+
+        <div class="login-done" :if="createdAs()">
+          <p class="login-welcome">Welcome, {{ createdAs() }}.</p>
+          <p class="section-note">Your account is ready. The bag will remember you at checkout.</p>
+          <a href="/menu" class="btn btn-primary btn-small">Start shopping</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+@endsection

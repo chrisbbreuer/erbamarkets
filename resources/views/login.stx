@@ -14,7 +14,27 @@
  * No data comes from the database here on purpose. A sign-in page that
  * queries anything gives an unauthenticated visitor a lever to pull.
  */
-const pageTitle = 'Staff sign in'
+const pageTitle = 'Sign in'
+
+/*
+ * Only providers with complete credentials get a button. Rendering Google and
+ * Apple unconditionally would send people into a half-built OAuth flow that
+ * 404s at the redirect, which reads as the site being broken rather than the
+ * feature being off.
+ *
+ * The same required-key sets @stacksjs/socials checks in its registry, read
+ * straight from the environment: an stx server script has no import, so the
+ * registry's own helper is out of reach here.
+ */
+const hasAll = (keys) => keys.every(key => String(process.env[key] || '').trim() !== '')
+
+const socialProviders = [
+  { name: 'google', label: 'Google', keys: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URL'] },
+  // Apple mints its client secret from a signed key, so there is no static one.
+  { name: 'apple', label: 'Apple', keys: ['APPLE_CLIENT_ID', 'APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY', 'APPLE_REDIRECT_URL'] },
+].filter(provider => hasAll(provider.keys))
+
+const hasSocial = socialProviders.length > 0
 </script>
 
 <script client>
@@ -36,6 +56,14 @@ const message = state('')
 const signedInAs = state('')
 
 const csrf = useCookie('X-CSRF-Token')
+
+/*
+ * A refused social sign-in is a policy decision, not an exception, so the
+ * callback redirects here with the reason rather than throwing. Surfaced in
+ * the same place as an email failure so there is one place to look.
+ */
+const params = useSearchParams()
+const socialError = derived(() => (params.get('social_error') ? String(params.get('social_error')) : ''))
 
 async function signIn(event) {
   event.preventDefault()
@@ -84,6 +112,24 @@ async function signIn(event) {
           For dispatch and the driver tools. Customers do not need an account to order.
         </p>
 
+        @if (hasSocial)
+          <div class="login-social">
+            @foreach (socialProviders as provider)
+              {{--
+                A link, not a fetch. The provider redirects the browser through
+                its consent page and back to the callback, which is a
+                navigation the page cannot do with XHR.
+              --}}
+              <a class="btn btn-ghost login-social-btn" href="/api/auth/{{ provider.name }}">
+                <span class="login-social-icon i-hugeicons-{{ provider.name }}" aria-hidden="true"></span>
+                Continue with {{ provider.label }}
+              </a>
+            @endforeach
+          </div>
+
+          <p class="login-divider"><span>or use your email</span></p>
+        @endif
+
         <form class="login-form" @submit="signIn($event)" :if="!signedInAs()">
           <label class="field">
             <span>Email</span>
@@ -110,11 +156,16 @@ async function signIn(event) {
           </label>
 
           <p class="login-error" role="alert" :if="message()">{{ message() }}</p>
+          <p class="login-error" role="alert" :if="socialError()">{{ socialError() }}</p>
 
           <button type="submit" class="btn btn-primary" :disabled="busy()">
             <span :if="!busy()">Sign in</span>
             <span :else>Signing in</span>
           </button>
+
+          <p class="login-alt">
+            No account yet? <a href="/register">Create one</a>.
+          </p>
         </form>
 
         <div class="login-done" :if="signedInAs()">
