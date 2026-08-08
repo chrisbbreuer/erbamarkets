@@ -48,7 +48,7 @@ export default {
    * It is white artwork, which is right here: every card is drawn on the dark
    * room background.
    */
-  brand: '',
+  brand: 'ERBA Markets',
 
   social: {
     enabled: true,
@@ -67,7 +67,18 @@ export default {
      * than replacing it. Putting the logo on the card properly needs the card
      * layout to know the mark's width, which is a change in ts-images itself.
      */
-    brand: 'ERBA Markets',
+    /*
+     * The real lockup carries the card, in place of the brand set in type.
+     * The row reserves the mark's true width (ts-images 0.2.8), so the 2:1
+     * wordmark is neither shrunk into a square nor run over the text beside
+     * it, and standing alone it takes the room that text would have used.
+     *
+     * No plate: the artwork is white and every card is drawn on the dark room
+     * background, so a white plate behind it would hide it.
+     */
+    brand: '',
+    mark: 'public/images/erba-logo.png',
+    markPlate: false,
     color: '#f3f2ed',
     mutedColor: '#9ba09a',
 
@@ -76,7 +87,7 @@ export default {
         path: '/',
         title: 'The premier cannabis destination in Los Angeles',
         eyebrow: 'West Los Angeles',
-        subtitle: 'Two rooms, free delivery over $30, and curbside pickup.',
+        subtitle: 'Two West LA dispensaries, free delivery over $30, and curbside pickup.',
       },
       {
         path: '/menu',
