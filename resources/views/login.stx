@@ -4,6 +4,10 @@
 
 @section('description')Sign in to the ERBA Markets dispatch tools.@endsection
 
+@section('canonical')https://erba.stacksjs.com/login@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/login.jpg@endsection
+
 @section('content')
 <script server>
 /*

@@ -4,6 +4,10 @@
 
 @section('description'){{ siteDescription }}@endsection
 
+@section('canonical')https://erba.stacksjs.com/@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
 @section('content')
 <script server>
 /**
@@ -412,17 +416,31 @@ onMount(() => {
     @include('site-nav')
 
     <main id="top">
-      <section class="hero on-media">
-        <div class="hero-media">
-          <img src="/images/erba/hero-inside.jpg" alt="Inside the ERBA dispensary on Sawtelle" width="1600" height="1067" fetchpriority="high" decoding="async">
-        </div>
-        <div class="hero-body">
-          <h1 class="rise">The premier cannabis destination in Los Angeles</h1>
-          <p class="rise rise-2">Two West LA rooms, free delivery over {{ westla.deliveryMinimum }}, and curbside pickup. Order online in about two minutes.</p>
-          <div class="hero-actions rise rise-3">
-            <a href="#menu" class="btn btn-primary">Order online</a>
-            <a href="#locations" class="btn btn-ghost">Find a store</a>
+      {{--
+        Asymmetric split rather than a full-bleed photo with the copy sitting
+        on it. The old shape was a dark image block whatever the theme was, so
+        the light theme never reached above the fold, and type over a
+        photograph is the most dated arrangement a shop front can have.
+
+        The type now sits on the page surface and follows the theme; only the
+        image panel stays dark, which is where a dark room belongs.
+      --}}
+      <section class="hero">
+        <div class="shell hero-inner">
+          <div class="hero-copy">
+            <h1 class="rise">The premier cannabis destination in Los Angeles</h1>
+            <p class="hero-sub rise rise-2">
+              Two rooms in West LA, free delivery over {{ westla.deliveryMinimum }}, and curbside pickup.
+            </p>
+            <div class="hero-actions rise rise-3">
+              <a href="/menu" class="btn btn-primary">Order online</a>
+              <a href="#locations" class="btn btn-ghost">Find a store</a>
+            </div>
           </div>
+
+          <figure class="hero-figure rise rise-2">
+            <img src="/images/erba/hero-inside.jpg" alt="Inside the ERBA dispensary on Sawtelle" width="1600" height="1067" fetchpriority="high" decoding="async">
+          </figure>
         </div>
       </section>
 
@@ -505,9 +523,9 @@ onMount(() => {
           <div class="reveal">
             <h2>Shopping should be experiential, not transactional</h2>
             <div class="story-body">
-              <p>ERBA is an evolution in aesthetic and function, and what we think a dispensary should be. The choices are many and the quality of every product is held to the same standard. Everything inside is curated, from the store design to the assortment. There is an intention to everything you see.</p>
-              <p>Whether it is CBD oil, edibles, pens or top shelf flower, we keep looking for new and exceptional brands and we keep catering to what you actually need. Our staff come from different corners of this industry and are trained to give you a straight answer.</p>
-              <p>No one should feel rushed or treated like a transaction. Every customer is different and gets treated that way. Word of mouth is our best asset, because it is the community that matters to us. The purchase is easy. The visit is what you remember.</p>
+              <p>ERBA is what we think a dispensary should be. Everything inside is curated, from the room to the assortment, and every product is held to the same standard.</p>
+              <p>CBD oil, edibles, pens or top shelf flower, we keep looking for brands worth carrying. Our staff come from different corners of this industry and are trained to give you a straight answer.</p>
+              <p>No one should feel rushed or treated like a transaction. Word of mouth is our best asset, because the community is what matters. The purchase is easy. The visit is what you remember.</p>
             </div>
           </div>
           <figure class="story-figure reveal" style="margin-block: 0;">

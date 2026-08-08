@@ -3,71 +3,88 @@ import type { ImagesConfig } from '@stacksjs/types'
 /**
  * **Images Configuration**
  *
- * Generated imagery — the social cards link previews show, the App Store
- * screenshot set, and the platform icon sets — is declared here and built by
- * `buddy generate:images`. Because Stacks is fully-typed, you may hover any of
- * the options below and the definitions will be provided. In case you have any
- * questions, feel free to reach out via Discord or GitHub Discussions.
+ * The link previews this site declares, built by `buddy generate:images`.
  *
- * Every generator is off until you fill it in: each one needs an asset the
- * framework cannot invent — a TrueType face, a product capture, a square
- * source icon.
+ * A link preview is the only part of a page most people ever see, and the
+ * default was the favicon: every share rendered as a small square icon next to
+ * a URL and said nothing about the shop. Each page below gets its own card
+ * with its own headline, so a link to the menu previews as the menu and a link
+ * to the specials previews as the specials.
+ *
+ * One card per page at 1200x630, and only that one is declared as `og:image`.
+ * Publishing a square and a portrait crop alongside it does not give consumers
+ * a shape to choose from: Discord lays every declared image out side by side,
+ * each cropped to a sliver, and Facebook and Apple take the first and ignore
+ * the rest.
  */
 export default {
-  // Cards and screenshots draw real glyphs rather than relying on a system
-  // font stack, so a face has to be a file the project ships or depends on.
-  // Point at a `.ttf`; OpenType/CFF and WOFF2 are different outline formats
-  // and will not load.
-  //
-  // fonts: {
-  //   title: '@expo-google-fonts/inter/Inter_700Bold.ttf',
-  //   body: '@expo-google-fonts/inter/Inter_400Regular.ttf',
-  // },
+  // Geist, the same face the site sets its type in, shipped as TTF because
+  // that is the outline format the generator reads. WOFF2 and OpenType/CFF are
+  // different formats and will not load.
+  fonts: {
+    title: 'resources/fonts/Geist-Bold.ttf',
+    body: 'resources/fonts/Geist-Regular.ttf',
+  },
 
-  // Shared palette. Positions are fractions of the canvas, so one definition
-  // renders correctly at every size the generators produce.
-  //
-  // background: {
-  //   color: '#0b0b0f',
-  //   gradient: { angle: 165, stops: [
-  //     { offset: 0, color: '#0b0b0f' },
-  //     { offset: 1, color: '#14141c' },
-  //   ] },
-  //   glows: [{ x: 0.84, y: 0.08, radius: 0.6, color: '#6366f138' }],
-  // },
-  // color: '#f5f5f7',
-  // accent: '#6366f1',
+  // The dark room, in the brand's own colours. Positions are fractions of the
+  // canvas, so one definition renders correctly at every size.
+  background: {
+    color: '#0b0d0c',
+    gradient: {
+      angle: 165,
+      stops: [
+        { offset: 0, color: '#0b0d0c' },
+        { offset: 1, color: '#131614' },
+      ],
+    },
+    glows: [{ x: 0.82, y: 0.1, radius: 0.6, color: '#a8d84a30' }],
+  },
+  color: '#f3f2ed',
+  mutedColor: '#9ba09a',
+  accent: '#a8d84a',
+
+  brand: 'ERBA Markets',
+  // No mark on the cards: the favicon artwork is a solid white shape, which
+  // reads as a blank white box at card scale. The wordmark carries it.
 
   social: {
-    enabled: false,
+    enabled: true,
     outputDir: 'public/social',
     publicPath: '/social',
-    // The `og` preset is the primary card and keeps the bare filename. The
-    // others exist because some consumers reserve a taller slot than 1.91:1
-    // and letterbox a wide card into it.
-    presets: ['og', 'square', 'portrait'],
-    // pages: [
-    //   { path: '/', title: 'Your headline here.', subtitle: 'One supporting line.' },
-    // ],
-  },
+    presets: ['og'],
+    format: 'jpeg',
+    quality: 88,
 
-  appStore: {
-    enabled: false,
-    outputDir: 'resources/app-store/screenshots',
-    displays: ['APP_IPHONE_67', 'APP_IPAD_PRO_3GEN_129', 'APP_DESKTOP'],
-    // Each slide is one claim about the product. `capture` is a raw screenshot
-    // of the app — no frame, no caption; the framing happens for you.
-    // slides: [
-    //   { capture: 'dist/captures/home.png', headline: 'What it does.', subheadline: 'Why that matters.' },
-    // ],
-  },
+    // The generators read these from the social block, not the top level.
+    accent: '#a8d84a',
+    color: '#f3f2ed',
+    mutedColor: '#9ba09a',
 
-  appIcons: {
-    enabled: false,
-    // source: 'resources/icon.png',
-    outputDir: 'resources/app-icons',
-    platforms: ['ios', 'macos'],
-    favicon: false,
-    faviconDir: 'public',
+    pages: [
+      {
+        path: '/',
+        title: 'The premier cannabis destination in Los Angeles',
+        eyebrow: 'West Los Angeles',
+        subtitle: 'Two rooms, free delivery over $30, and curbside pickup.',
+      },
+      {
+        path: '/menu',
+        title: 'Everything on the shelf today',
+        eyebrow: 'The full menu',
+        subtitle: 'Flower, pre-rolls, cartridges, edibles and concentrates, priced as you see them.',
+      },
+      {
+        path: '/specials',
+        title: 'A reason to come in, seven days a week',
+        eyebrow: 'Weekly specials',
+        subtitle: 'A deal every day, from Tank Tuesday to Fresh Fruit Cup Friday.',
+      },
+      {
+        path: '/login',
+        title: 'Staff sign in',
+        eyebrow: 'ERBA staff',
+        subtitle: 'Dispatch and driver tools.',
+      },
+    ],
   },
 } satisfies ImagesConfig

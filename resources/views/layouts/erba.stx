@@ -5,7 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title')</title>
     <meta name="description" content="@yield('description')">
-    <link rel="canonical" href="https://www.erbamarkets.com/">
+    <link rel="canonical" href="@yield('canonical')">
+
+    {{--
+      The original ERBA mark, which is white artwork on transparency. On a light
+      browser tab that is invisible, so the light variant paints it on the brand
+      ink plate. stx repoints the unmediated icon to the matching variant as the
+      theme changes, which the media query alone cannot do: it follows the
+      operating system, not the theme the site is displaying.
+    --}}
+    <link rel="icon" type="image/svg+xml" href="/images/erba-icon-light.svg">
+    <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: light)" href="/images/erba-icon-light.svg">
+    <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: dark)" href="/images/erba-icon-dark.svg">
+    <link rel="apple-touch-icon" href="/images/erba-icon-light.svg">
 
     <!--
       Both themes render correctly, so the UA must not invert form controls
@@ -18,12 +30,24 @@
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="ERBA Markets">
-    <meta property="og:url" content="https://www.erbamarkets.com/">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:url" content="@yield('canonical')">
     <meta property="og:title" content="@yield('title')">
     <meta property="og:description" content="@yield('description')">
+    {{--
+      One og:image, not a set. Discord lays every declared image out side by
+      side, each cropped to a sliver, so a "fallback" gallery previews worse
+      than the single card would.
+    --}}
+    <meta property="og:image" content="@yield('ogImage')">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="@yield('title')">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('title')">
     <meta name="twitter:description" content="@yield('description')">
+    <meta name="twitter:image" content="@yield('ogImage')">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -720,28 +744,35 @@
       .menu-table tr[hidden] { display: none; }
 
       /* ---------- hero ---------- */
-      .hero { position: relative; min-height: calc(100dvh - 72px); display: flex; align-items: flex-end; overflow: hidden; }
-      .hero-media { position: absolute; inset: 0; }
-      .hero-media img { width: 100%; height: 100%; object-fit: cover; filter: var(--photo) brightness(0.62); }
-      .hero-media::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, rgb(var(--scrim-rgb) / 0.96) 4%, rgb(var(--scrim-rgb) / 0.35) 48%, rgb(var(--scrim-rgb) / 0.68) 100%);
-      }
-      .hero-body { position: relative; width: var(--shell); margin-inline: auto; padding: 5rem 0 4.5rem; }
       /*
-       * Font scale is planned against the copy, not picked first: this
-       * headline is seven words, so it sits two lines deep at desktop and the
-       * CTAs stay above the fold.
+       * Split, not full-bleed. The copy column sits on the page surface so it
+       * reads in both themes; the figure is the only dark element, and it is
+       * framed rather than bled so it looks deliberate on a light page.
+       */
+      .hero { padding: clamp(3rem, 6vw, 5rem) 0 clamp(3.5rem, 7vw, 6rem); }
+      .hero-inner { display: grid; gap: clamp(2.5rem, 5vw, 4rem); align-items: center; }
+      @media (min-width: 1000px) { .hero-inner { grid-template-columns: 1.05fr 0.95fr; gap: clamp(3rem, 6vw, 6rem); } }
+
+      /*
+       * Seven words. At the old clamp this ran four lines; capped in ch so it
+       * breaks at two on desktop and the CTAs stay above the fold.
        */
       .hero h1 {
-        max-width: 24ch;
-        font-size: clamp(2.35rem, 5.4vw, 4.9rem);
+        max-width: 26ch;
+        font-size: clamp(2rem, 4vw, 2.9rem);
         text-transform: uppercase;
       }
-      .hero p { margin-top: 1.5rem; max-width: 46ch; font-size: clamp(1rem, 1.6vw, 1.2rem); color: rgb(var(--paper-rgb) / 0.82); }
-      .hero-actions { margin-top: 2.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+      .hero-sub { margin-top: 1.5rem; max-width: 38ch; font-size: clamp(1rem, 1.5vw, 1.15rem); color: var(--muted); }
+      .hero-actions { margin-top: 2.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+      .hero-figure { margin: 0; position: relative; overflow: hidden; background: var(--ink-sunken); }
+      .hero-figure img {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        filter: var(--photo);
+      }
+      @media (min-width: 1000px) { .hero-figure img { aspect-ratio: 5 / 6; } }
 
       /* ---------- brand marquee ---------- */
       .brands { border-block: 1px solid var(--faint); padding: 1.9rem 0; overflow: hidden; }
@@ -854,7 +885,9 @@
       /* ---------- philosophy ---------- */
       .story { display: grid; gap: 3.5rem; align-items: start; }
       @media (min-width: 1024px) { .story { grid-template-columns: 1.15fr 0.85fr; gap: 5rem; } }
-      .story h2 { font-size: clamp(2.1rem, 5vw, 4.2rem); text-transform: uppercase; }
+      /* Six words at the old scale ran four lines. Capped in ch so it breaks
+         at three, which is where a statement headline should sit. */
+      .story h2 { max-width: 17ch; font-size: clamp(1.9rem, 4vw, 3.4rem); text-transform: uppercase; }
       .story-body { margin-top: 2.25rem; display: grid; gap: 1.5rem; max-width: 62ch; color: rgb(var(--paper-rgb) / 0.78); font-size: 1.05rem; }
       .story-figure img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; filter: var(--photo) brightness(0.9); }
       @media (min-width: 1024px) { .story-figure { margin-top: 5rem; } }

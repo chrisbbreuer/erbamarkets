@@ -4,6 +4,10 @@
 
 @section('description'){{ pageDescription }}@endsection
 
+@section('canonical')https://erba.stacksjs.com/specials@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/specials.jpg@endsection
+
 @section('content')
 <script server>
 /**
