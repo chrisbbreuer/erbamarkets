@@ -202,6 +202,19 @@ route.post('/orders', async (request: any) => {
   })
 })
 
+/**
+ * VIP signup, on the framework's Subscriber model.
+ *
+ * Deliberately not the `useApi` CRUD the model generates at /api/subscribers.
+ * That route is the staff-facing one: it takes `status` from the caller, so a
+ * visitor could post themselves in as `unsubscribed`, and it answers a repeat
+ * signup with a unique-constraint error rather than telling someone they are
+ * already on the list. This writes the same model with the fields the shop
+ * controls and returns copy a customer can read.
+ *
+ * `/vip/unsubscribe` completes the pair using the framework's own action, so
+ * every send has a way off the list.
+ */
 route.post('/vip', async (request: any) => {
   const email = String(request.input('email', '')).trim().toLowerCase()
 
@@ -216,6 +229,8 @@ route.post('/vip', async (request: any) => {
 
   return response.created({ message: 'You are on the list. Watch for the drop emails.' })
 })
+
+route.post('/vip/unsubscribe', 'Actions/UnsubscribeAction')
 
 /**
  * Geocode a delivery address and check it is somewhere we go.

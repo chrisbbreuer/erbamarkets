@@ -541,15 +541,21 @@
       .menu-head { margin-top: 1.1rem; display: flex; flex-direction: column; gap: 1.1rem; }
       .menu-head h1 { font-size: clamp(2rem, 4.6vw, 3.6rem); text-transform: uppercase; max-width: 18ch; }
 
+      /*
+       * One control surface, not three clusters drifting apart on a wide
+       * screen. Search takes the space it needs, the two filters and the view
+       * toggle sit against it, and they share a single hairline frame so they
+       * read as one bar rather than loose furniture.
+       */
       .menu-controls {
         margin-top: 2.25rem;
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
+        align-items: stretch;
+        gap: 0;
+        border: 1px solid var(--faint-strong);
       }
-      .menu-search { position: relative; flex: 1 1 320px; max-width: 460px; }
+      .menu-search { position: relative; flex: 1 1 300px; min-width: 0; }
       .menu-search-icon {
         position: absolute;
         left: 1rem;
@@ -562,10 +568,11 @@
       }
       .menu-search input {
         width: 100%;
+        height: 100%;
         padding: 1rem 1.1rem 1rem 2.9rem;
-        border: 1px solid var(--faint-strong);
+        border: 0;
         border-radius: 0;
-        background: var(--ink-raised);
+        background: transparent;
         color: var(--paper);
         font: inherit;
       }
@@ -583,12 +590,13 @@
         color: var(--acid);
       }
 
-      .menu-selects { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+      .menu-selects { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; border-left: 1px solid var(--faint-strong); }
+      .menu-selects > * + * { border-left: 1px solid var(--faint-strong); }
 
       /* Grid / Table toggle. Same pill language as the category filters. */
-      .menu-view { display: inline-flex; border: 1px solid var(--faint-strong); border-radius: 999px; overflow: hidden; }
+      .menu-view { display: inline-flex; border-left: 1px solid var(--faint-strong); }
       .menu-view button {
-        padding: 0.7rem 1.15rem;
+        padding: 1rem 1.15rem;
         border: 0;
         background: transparent;
         font: inherit;
@@ -611,10 +619,11 @@
       .menu-select select {
         appearance: none;
         -webkit-appearance: none;
-        padding: 0.85rem 3rem 0.85rem 1.1rem;
-        border: 1px solid var(--faint-strong);
+        height: 100%;
+        padding: 1rem 3rem 1rem 1.1rem;
+        border: 0;
         border-radius: 0;
-        background-color: var(--ink-raised);
+        background-color: transparent;
         background-image: var(--chevron);
         background-repeat: no-repeat;
         background-position: right 1.1rem center;
@@ -625,7 +634,7 @@
         cursor: pointer;
         transition: border-color 0.18s var(--ease), color 0.18s var(--ease);
       }
-      .menu-select select:hover { border-color: var(--paper); }
+      .menu-select select:hover { color: var(--paper); background-color: rgb(var(--paper-rgb) / 0.04); }
       .menu-select select:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
 
       /*
@@ -679,16 +688,18 @@
       }
 
       .menu-filters { margin-top: 1.25rem; }
+      /* Collapses when it has nothing to say, instead of reserving a band of
+         empty space between the filters and the first product. */
       .menu-meta {
-        margin-top: 1.5rem;
+        margin-top: 1.25rem;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 1rem;
-        min-height: 1.5rem;
         font-size: 0.78rem;
         color: var(--muted);
       }
+      .menu-meta:empty { display: none; margin: 0; }
       .menu-clear {
         border: 0;
         background: transparent;
@@ -702,7 +713,7 @@
       }
       .menu-empty { padding: 5rem 0; text-align: center; color: var(--muted); }
 
-      .section.menu-results-section { padding-top: 2.5rem; }
+      .section.menu-results-section { padding-top: 1.75rem; }
       .menu-grid { margin-top: 0; }
       .menu-grid[hidden], .menu-table-wrap[hidden] { display: none; }
 
@@ -881,6 +892,32 @@
       .special-offer { margin-top: 0.9rem; color: rgb(var(--paper-rgb) / 0.8); }
       .special-brands { margin-top: auto; padding-top: 1.5rem; font-size: 0.72rem; color: var(--muted); line-height: 1.7; }
       .special-store { margin-top: 0.6rem; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--acid); }
+
+      /* ---------- today's deal (homepage teaser) ---------- */
+      .today-deal { display: grid; gap: 2.5rem; align-items: start; }
+      @media (min-width: 900px) { .today-deal { grid-template-columns: 1.4fr 1fr; gap: 4rem; } }
+      .today-deal h2 { margin-top: 1.1rem; font-size: clamp(1.9rem, 4vw, 3rem); text-transform: uppercase; max-width: 16ch; }
+      .today-deal .section-note { margin-top: 1.1rem; }
+      .today-deal-actions { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+      .today-deal-brands {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-content: start;
+      }
+      .today-deal-brands li {
+        padding: 0.35rem 0.8rem;
+        border: 1px solid var(--faint-strong);
+        border-radius: 999px;
+        font-size: 0.68rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .specials-fineprint { margin-top: 3rem; font-size: 0.78rem; color: var(--muted); max-width: 62ch; }
 
       /* ---------- philosophy ---------- */
       .story { display: grid; gap: 3.5rem; align-items: start; }

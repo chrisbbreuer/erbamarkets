@@ -107,6 +107,10 @@ const navBrands = Object.entries(productsPerBrand)
 
 // Featured picks itself: the first flagged product that actually has a photo,
 // because the panel gives it a 4:3 frame and an empty one looks broken.
+/* Eight for the homepage. Ordered by is_featured already, so this is the
+   staff picks with a photo, which is what the grid frame needs. */
+const featuredProducts = products.filter(product => product.image).slice(0, 8)
+
 const navFeature = products.find(product => product.image) || null
 const navProductCount = products.length
 // Read off `stores` rather than `westla`, which is declared further down.
@@ -125,6 +129,11 @@ const specials = specialRows
     brands: JSON.parse(row.brands || '[]'),
     storeOnly: row.store_slug ? (stores.find(store => store.slug === row.store_slug)?.shortName || '') : '',
   }))
+
+/* The customer's day, not the box's. A server in Europe would otherwise put
+   an LA visitor on tomorrow's deal all evening. */
+const laToday = new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'long' })
+const todaySpecial = specials.find(special => special.day === laToday) || null
 
 const sawtelle = stores.find(store => store.slug === 'erba-sawtelle') || stores[0]
 const westla = stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]
@@ -455,6 +464,15 @@ onMount(() => {
         </div>
       </section>
 
+      {{--
+        A curated eight, not the whole catalogue. /menu owns the full list with
+        its own search, filters and table view, and repeating all twenty here
+        made the homepage long and gave the same job to two pages.
+
+        The category filter went with it: filtering a shortlist of eight is
+        busywork, and the pills belonged to the page that has something to
+        filter.
+      --}}
       <section id="menu" class="section">
         <div class="shell">
           <div class="menu-top reveal">
@@ -462,17 +480,12 @@ onMount(() => {
               <p class="eyebrow">The menu</p>
               <h2>What is on the shelf right now</h2>
             </div>
-            <div class="filters" role="group" aria-label="Filter the menu by category">
-              <button type="button" class="filter" :aria-pressed="activeCategory() === 'all'" @click="activeCategory.set('all')">All</button>
-              @foreach (categories as category)
-                <button type="button" class="filter" :aria-pressed="activeCategory() === '{{ category.slug }}'" @click="activeCategory.set('{{ category.slug }}')">{{ category.name }}</button>
-              @endforeach
-            </div>
+            <a href="/menu" class="btn btn-ghost btn-small">Browse all {{ navProductCount }}</a>
           </div>
 
-          <div class="grid" :data-filter="activeCategory()">
-            @foreach (products as product)
-              <article class="card" data-cat="{{ product.category }}">
+          <div class="grid">
+            @foreach (featuredProducts as product)
+              <article class="card">
                 <div class="card-media">
                   <img src="{{ product.image }}" alt="{{ product.name }} by {{ product.brand }}" width="900" height="1100" loading="lazy" decoding="async">
                   <span class="card-strain on-media">{{ product.strain }}</span>
@@ -495,26 +508,33 @@ onMount(() => {
         </div>
       </section>
 
+      {{--
+        Today, not the whole week. /specials carries the full calendar; the
+        homepage's job is to say what is on right now and get out of the way.
+      --}}
       <section id="specials" class="section" style="background: var(--ink-sunken);">
         <div class="shell">
-          <div class="section-head reveal">
-            <h2>A reason to come in every day</h2>
-          </div>
-          <p class="section-note reveal" style="margin-top: 1.25rem;">Prices and discounts change without notice, and deals run while supplies last. All sales are final.</p>
+          @if (todaySpecial)
+            <div class="today-deal reveal">
+              <div class="today-deal-copy">
+                <p class="eyebrow">Today, {{ todaySpecial.day }}</p>
+                <h2>{{ todaySpecial.title }}</h2>
+                <p class="section-note">{{ todaySpecial.offer }}</p>
+                <div class="today-deal-actions">
+                  <a href="/menu" class="btn btn-primary btn-small">Order online</a>
+                  <a href="/specials" class="btn btn-ghost btn-small">See the whole week</a>
+                </div>
+              </div>
 
-          <div class="specials-rail">
-            @foreach (specials as special)
-              <article class="special">
-                <p class="special-day">{{ special.day }}</p>
-                <h3>{{ special.title }}</h3>
-                <p class="special-offer">{{ special.offer }}</p>
-                <p class="special-brands">{{ special.brands.join(', ') }}</p>
-                @if (special.storeOnly)
-                  <p class="special-store">{{ special.storeOnly }} only</p>
-                @endif
-              </article>
-            @endforeach
-          </div>
+              <ul class="today-deal-brands">
+                @foreach (todaySpecial.brands as brand)
+                  <li>{{ brand }}</li>
+                @endforeach
+              </ul>
+            </div>
+          @endif
+
+          <p class="specials-fineprint">Prices and discounts change without notice, and deals run while supplies last. All sales are final.</p>
         </div>
       </section>
 
