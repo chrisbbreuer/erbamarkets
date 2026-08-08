@@ -1,0 +1,63 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Lets a deploy be re-run from the Actions tab without an empty commit.
+  workflow_dispatch:
+
+# A deploy replaces the release on the box, so two running at once would race
+# to write the same systemd unit and rpx fragment. Queue them instead, and do
+# not cancel one midway: a half-applied deploy is worse than a slow one.
+concurrency:
+  group: deploy-erbamarkets
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # `buddy deploy` tars the working directory rather than the commit, so
+      # deploying from a laptop ships whatever happens to be checked out,
+      # including someone else's half-finished work. A clean checkout here
+      # means the release is exactly the commit that triggered it.
+      - name: Trust the deploy target
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy
+        env:
+          APP_ENV: production
+          APP_KEY: ${{ secrets.APP_KEY }}
+          # Scoped to the erba_products collection. The box's Typesense is
+          # shared with other tenants, so the admin key must never come here.
+          TYPESENSE_API_KEY_PROD: ${{ secrets.TYPESENSE_API_KEY_PROD }}
+        run: ./buddy deploy
+
+      - name: Check the site answers
+        run: |
+          for path in / /menu /specials /login /register; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -m 30 "https://erba.stacksjs.com${path}")
+            echo "${path} -> ${code}"
+            # A deploy that leaves a page non-200 has not succeeded, whatever
+            # the deploy step said.
+            if [ "$code" != "200" ]; then
+              echo "::error::${path} returned ${code} after deploy"
+              exit 1
+            fi
+          done
