@@ -1,0 +1,131 @@
+@layout('erba')
+
+@section('title')Our story - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/story@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Our story.
+ *
+ * The homepage carries a three-paragraph version of this, which is the right
+ * length for someone on their way to the menu. This page is for the person who
+ * followed the link, so it keeps the philosophy in full - the same three
+ * headings the old site used, in sentence case rather than the all-caps slab
+ * it was set in.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'Shopping should be experiential, not transactional. The idea behind ERBA, and how two rooms in West Los Angeles are put together.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const chapters = [
+  {
+    title: 'Our philosophy',
+    image: '/images/erba/indoor-tree.jpg',
+    alt: 'The indoor tree at the centre of the Sawtelle room',
+    body: [
+      'Shopping should be much more than transactional. It should be experiential. ERBA aims to be an evolution in aesthetic and in function, which is what we think the future of a dispensary looks like.',
+      'The choices are many, and the quality of each product is held to the same standard. Everything inside is carefully curated, from the store design to the assortment on the shelf. There is an intention to everything you see.',
+    ],
+  },
+  {
+    title: 'A home for top tier brands',
+    image: '/images/erba/detail-3.jpg',
+    alt: 'Product detail on the shelf at ERBA',
+    body: [
+      'CBD oils, edibles, pens or top shelf flower, we stay diligent about finding new and exceptional brands and moving that needle, always catering to what you came in for.',
+      'Our staff are diverse in their experience and are trained to give you clarity and a straight answer based on what you actually need, not on what we would like to move.',
+    ],
+  },
+  {
+    title: 'No one should feel rushed',
+    image: '/images/erba/people.jpg',
+    alt: 'Customers and staff at the ERBA counter',
+    body: [
+      'Every customer is different and should be treated that way. This is an industry with an ever expanding audience, and our goal is to be for all of it. The keys to that are fundamental to the business: service and variety, housed in a room worth standing in.',
+      'That is the ethos at ERBA. We want word of mouth to be our greatest asset, because it is the community that matters to us, and it is through that prism that we hope you tell your friends and family. The transaction is easy. The experience is what you remember.',
+    ],
+  },
+]
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Our story</p>
+          <h1>Shopping should be experiential, not transactional</h1>
+          <p class="page-lede">
+            ERBA is what we think a dispensary should be. Two rooms in West Los Angeles,
+            each one curated from the floor up.
+          </p>
+        </div>
+      </section>
+
+      @foreach (chapters as chapter)
+        <section class="section">
+          <div class="shell story">
+            <div class="reveal">
+              <h2>{{ chapter.title }}</h2>
+              <div class="story-body">
+                @foreach (chapter.body as paragraph)
+                  <p>{{ paragraph }}</p>
+                @endforeach
+              </div>
+            </div>
+            <figure class="story-figure reveal" style="margin-block: 0;">
+              <img src="{{ chapter.image }}" alt="{{ chapter.alt }}" width="1200" height="1600" loading="lazy" decoding="async">
+            </figure>
+          </div>
+        </section>
+      @endforeach
+
+      <section class="section" style="background: var(--ink-sunken);">
+        <div class="shell">
+          <div class="section-head reveal">
+            <p class="eyebrow">Come see it</p>
+            <h2>Two rooms in West LA</h2>
+          </div>
+
+          <div class="stores">
+            @foreach (stores as store)
+              <article class="store reveal">
+                <div class="store-media">
+                  <img src="{{ store.image }}" alt="{{ store.name }}" width="1200" height="750" loading="lazy" decoding="async">
+                </div>
+                <div class="store-body">
+                  <h3>{{ store.name }}</h3>
+                  <p class="store-address"><a href="{{ store.mapUrl }}" target="_blank" rel="noopener">{{ store.address }}</a></p>
+                  <div class="store-actions">
+                    <a href="{{ store.url }}" class="btn btn-ghost btn-small">Store details</a>
+                    <a href="/tour" class="btn btn-ghost btn-small">Virtual tour</a>
+                  </div>
+                </div>
+              </article>
+            @endforeach
+          </div>
+        </div>
+      </section>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

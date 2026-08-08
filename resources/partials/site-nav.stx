@@ -87,8 +87,9 @@
                 <li><a href="/menu?sort=price-asc"><span>Lowest price</span></a></li>
                 <li><a href="/menu?featured=1"><span>Staff picks</span></a></li>
                 <li><a href="/specials"><span>Weekly deals</span></a></li>
-                <li><a href="/#delivery"><span>Delivery</span></a></li>
-                <li><a href="/#locations"><span>Pickup</span></a></li>
+                <li><a href="/brands"><span>Shop all brands</span></a></li>
+                <li><a href="/delivery"><span>Delivery and pickup</span></a></li>
+                <li><a href="/gift-cards"><span>Gift cards</span></a></li>
               </ul>
               <p class="mega-sub">Free delivery over {{ navDeliveryMinimum }} across West LA, 10AM to 8PM.</p>
             </div>
@@ -119,10 +120,17 @@
         </div>
       </div>
 
+      {{--
+        Real pages rather than homepage anchors. The anchors worked only from
+        `/`; from any other route they navigated home and jumped, which reads
+        as the link having gone to the wrong place.
+      --}}
       <a href="/specials">Specials</a>
+      <a href="/brands">Brands</a>
+      <a href="/delivery">Delivery</a>
       <a href="/#locations">Locations</a>
-      <a href="/#delivery">Delivery</a>
-      <a href="/#story">Story</a>
+      <a href="/story">Story</a>
+      <a href="/faqs">FAQs</a>
     </nav>
 
     <div class="nav-actions">

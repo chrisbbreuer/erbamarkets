@@ -1,0 +1,118 @@
+@layout('erba')
+
+@section('title')Gift cards - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/gift-cards@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Digital gift cards.
+ *
+ * Issued by Birchmount, who run the card programme for both rooms, so the buy
+ * flow is theirs and this page's whole job is to hand the customer over
+ * cleanly and say what the card can be used for before they click.
+ *
+ * The old page also printed a QR code of the same URL, which is only useful to
+ * someone reading a screen with a second device in their hand. On a page you
+ * are already looking at, the link is the QR code.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'Digital gift cards for ERBA Markets, redeemable at both West Los Angeles dispensaries, in store and on delivery. No fees.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const cardStore = 'https://card.birchmountnetwork.com/store/erbamarkets'
+
+const points = [
+  {
+    title: 'No fees',
+    body: 'The full value goes on the card and stays on it. Nothing is deducted for buying it, holding it or using it.',
+    tone: 'accent',
+  },
+  {
+    title: 'Both rooms',
+    body: `Good at ${sawtelle.name} and ${westla.name}, in store, on curbside pickup and on delivery.`,
+  },
+  {
+    title: 'Delivered by email',
+    body: 'Choose an amount, add a note, and it arrives in their inbox. Send it now or schedule it for the morning.',
+    tone: 'tint',
+  },
+  {
+    title: 'Still 21 and over',
+    body: 'A gift card is not a way around the age check. Whoever redeems it shows valid government issued ID, the same as any other customer.',
+  },
+]
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Gift cards</p>
+          <h1>Load a digital gift card</h1>
+          <p class="page-lede">
+            Any amount, no fees, and it works on everything we sell across both rooms.
+            Cards are issued by Birchmount, so checkout happens on their site.
+          </p>
+          <div class="hero-actions" style="margin-top: 2rem;">
+            <a href="{{ cardStore }}" target="_blank" rel="noopener" class="btn btn-primary">Buy a gift card</a>
+            <a href="/menu" class="btn btn-ghost">Browse the menu</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell">
+          <div class="bento">
+            @foreach (points as point)
+              <article class="fact reveal {{ point.tone === 'accent' ? 'fact--accent' : '' }} {{ point.tone === 'tint' ? 'fact--tint' : '' }}">
+                <h3>{{ point.title }}</h3>
+                <p>{{ point.body }}</p>
+              </article>
+            @endforeach
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--ink-sunken);">
+        <div class="shell prose">
+          <h2>Redeeming one</h2>
+          <p>
+            In store, show the card at the counter and the balance comes off the total.
+            On delivery, tell the driver you are paying with a gift card and have it open
+            on your phone. Any balance left over stays on the card for next time.
+          </p>
+          <h2>Checking a balance</h2>
+          <p>
+            Balances live with Birchmount and can be checked from the same
+            <a href="{{ cardStore }}" target="_blank" rel="noopener">card page</a> you bought
+            it on. If a card is not behaving, call the room you are standing in and we will
+            sort it out: <a href="{{ sawtelle.storePhoneHref }}">{{ sawtelle.storePhone }}</a>
+            for {{ sawtelle.shortName }}, <a href="{{ westla.storePhoneHref }}">{{ westla.storePhone }}</a>
+            for {{ westla.shortName }}.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

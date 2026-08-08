@@ -1,0 +1,201 @@
+@layout('erba')
+
+@section('title')Privacy policy - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/privacy@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Privacy policy.
+ *
+ * Carried over from the policy the old site published in August 2024, with the
+ * generator boilerplate that did not apply to a Los Angeles dispensary taken
+ * out, and with the sections that describe what this site actually does -
+ * delivery addresses, the bag token, the age cookie - written to match the
+ * code rather than a template.
+ *
+ * The old site also served a second, unfinished /privacy page that was still
+ * lorem ipsum. That one is not carried over; this URL replaces both.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'How ERBA Markets collects, uses and protects your personal information, and the rights you have over it under California law.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const updated = 'February 2026'
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Legal</p>
+          <h1>Privacy policy</h1>
+          <p class="page-lede">
+            What we collect, why we collect it, who else sees it, and how to get it
+            deleted.
+          </p>
+          <p class="page-meta">Last updated {{ updated }}</p>
+        </div>
+      </section>
+
+      <div class="shell prose">
+        <h2>Who we are</h2>
+        <p>
+          ERBA Markets operates two licensed cannabis retailers in Los Angeles, California:
+          {{ sawtelle.name }} at {{ sawtelle.addressLine }} (licence {{ sawtelle.license }})
+          and {{ westla.name }} at {{ westla.addressLine }} (licence {{ westla.license }}).
+          In this policy, "we", "us" and "our" mean ERBA Markets, and "you" means the person
+          using this website. This policy covers www.erbamarkets.com and the ordering,
+          delivery and tracking that runs on it.
+        </p>
+
+        <h2>What we collect</h2>
+        <h3>Information you give us</h3>
+        <ul>
+          <li><strong>To place an order:</strong> your name, mobile number, and - for delivery - your street address, unit and ZIP code, plus any note you leave for the driver.</li>
+          <li><strong>To create an account:</strong> your email address and a password, which is stored only as a hash.</li>
+          <li><strong>To join the VIP list:</strong> your email address.</li>
+          <li><strong>To contact us or apply for a job:</strong> whatever you put in the form, which is your name, email, phone and message.</li>
+        </ul>
+        <h3>Information collected automatically</h3>
+        <ul>
+          <li><strong>Usage data:</strong> your IP address, browser and version, which pages you visited, when, and for how long. On a phone, this also includes the device type and operating system.</li>
+          <li><strong>Order records:</strong> what you bought, from which room, and when. California requires licensed retailers to keep sales records, so this is not optional for either of us.</li>
+        </ul>
+        <h3>Age verification</h3>
+        <p>
+          Before showing a menu we ask whether you are 21 or older, and we record your
+          answer. In store and at the door on a delivery, we check valid government issued
+          photo identification. We check it, we do not photograph or store it.
+        </p>
+
+        <h2>Cookies and similar technology</h2>
+        <p>
+          We use a small number of first-party cookies and browser storage entries, and
+          each one does a job:
+        </p>
+        <dl>
+          <dt>Age confirmation</dt>
+          <dd>Records that you confirmed you are 21 or older, so you are not asked again on every visit. Expires after thirty days.</dd>
+          <dt>Bag token</dt>
+          <dd>An opaque, randomly generated identifier held in your browser that links you to your shopping bag on our server. It contains no personal information and exists so you can fill a bag without signing in.</dd>
+          <dt>Theme</dt>
+          <dd>Remembers whether you chose the light or the dark theme.</dd>
+          <dt>Session and security</dt>
+          <dd>Keeps you signed in if you have an account, and carries the cross-site request forgery token that protects form submissions.</dd>
+        </dl>
+        <p>
+          You can refuse or delete cookies in your browser settings. If you do, the bag,
+          the age gate and staying signed in will stop working.
+        </p>
+
+        <h2>How we use it</h2>
+        <ul>
+          <li>To take, pack, deliver and account for your order, and to reach you if something about it changes.</li>
+          <li>To let you follow a delivery, which means sharing your delivery address with the driver assigned to it.</li>
+          <li>To run and secure the website, including detecting fraud and abuse.</li>
+          <li>To meet our obligations as a licensed California retailer, including sales and inventory records.</li>
+          <li>To send you the VIP emails, if you asked for them. Every one of those has an unsubscribe link, and using it takes you off the list immediately.</li>
+        </ul>
+        <p>
+          We do not sell your personal information, and we do not share it with anyone for
+          their own advertising.
+        </p>
+
+        <h2>Who else sees it</h2>
+        <ul>
+          <li><strong>Delivery drivers,</strong> who see the name, address, phone number and note for the stop they are running.</li>
+          <li><strong>Payment processors,</strong> who handle the card transaction. Card numbers do not reach us or this website.</li>
+          <li><strong>Service providers</strong> who host the site and send our email, bound by contract to use your information only to provide that service.</li>
+          <li><strong>Regulators and law enforcement,</strong> where the law requires it or a valid legal request compels it.</li>
+          <li><strong>An acquirer,</strong> if the business is ever merged or sold. We would tell you before your information moved under a different policy.</li>
+        </ul>
+
+        <h2>How long we keep it</h2>
+        <p>
+          Order and transaction records are kept for as long as California cannabis
+          regulations require and no longer. Marketing preferences are kept until you
+          unsubscribe. Contact form messages and job applications are kept for up to
+          twelve months. Usage data is kept in a shortened form for security and
+          diagnostics.
+        </p>
+
+        <h2>Your rights in California</h2>
+        <p>
+          Under the California Consumer Privacy Act as amended, you can ask us what
+          personal information we hold about you, ask for a copy of it, ask us to correct
+          it, and ask us to delete it. You can also ask us not to sell or share it, though
+          we do neither. Exercising any of these rights will never get you worse service
+          or a worse price.
+        </p>
+        <p>
+          Some information we have to keep even after a deletion request, because a
+          licensed retailer is legally required to retain sales records. Where that
+          applies we will tell you exactly what is being kept and why.
+        </p>
+        <p>
+          To make a request, email
+          <a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a> or use
+          <a href="/contact">the contact form</a>. We answer within forty-five days.
+        </p>
+
+        <h2>Security</h2>
+        <p>
+          Traffic to this site is encrypted in transit. Passwords are stored as hashes and
+          never in a readable form. Access to customer records is limited to staff who need
+          it to do their job. No method of transmission or storage is completely secure,
+          and we will not pretend otherwise, but we treat your address and phone number as
+          the sensitive information they are.
+        </p>
+
+        <h2>Children</h2>
+        <p>
+          This is a cannabis retailer. Nothing here is directed at anyone under 21, and we
+          do not knowingly collect information from anyone under 21. If you believe a minor
+          has given us personal information, contact us and we will delete it.
+        </p>
+
+        <h2>Other websites</h2>
+        <p>
+          Some pages link out - Matterport for the 360 tours, Birchmount for gift cards,
+          Google Maps for directions. Following one of those takes you onto a service we do
+          not control, under its own privacy policy. We suggest reading it.
+        </p>
+
+        <h2>Changes to this policy</h2>
+        <p>
+          If we change this policy we will post the new version here and move the date at
+          the top. Where a change is significant we will say so prominently before it takes
+          effect.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Questions about this policy, or about anything we hold on you:
+          <a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a>, or write to
+          ERBA Markets, {{ sawtelle.addressLine }}, Los Angeles, CA {{ sawtelle.postalCode }}.
+        </p>
+      </div>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

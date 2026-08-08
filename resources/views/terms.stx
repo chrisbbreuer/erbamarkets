@@ -1,0 +1,194 @@
+@layout('erba')
+
+@section('title')Terms and conditions - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/terms@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Terms and conditions.
+ *
+ * The old version was generator output that had never been read: it governed
+ * itself by "the prevailing law of Netherlands", spent four screens on who may
+ * hyperlink to the site, and set out a comment moderation policy for a site
+ * with no comments. None of that is carried over.
+ *
+ * What is here covers what this site actually does - age, ordering, delivery,
+ * pricing, gift cards - under California law, which is the law that applies to
+ * a Los Angeles retailer.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'The terms that apply when you use the ERBA Markets website and order from our West Los Angeles dispensaries.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const updated = 'February 2026'
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Legal</p>
+          <h1>Terms and conditions</h1>
+          <p class="page-lede">
+            The rules for using this website and for ordering from either of our rooms.
+          </p>
+          <p class="page-meta">Last updated {{ updated }}</p>
+        </div>
+      </section>
+
+      <div class="shell prose">
+        <h2>Agreeing to these terms</h2>
+        <p>
+          By using www.erbamarkets.com you accept these terms. If you do not accept them,
+          please do not use the site. "We", "us" and "our" mean ERBA Markets;
+          "you" means you.
+        </p>
+
+        <h2>You must be 21</h2>
+        <p>
+          Cannabis is sold in California only to adults 21 and over, or to patients 18 and
+          over holding a valid physician's recommendation. We ask you to confirm your age
+          before showing a menu, and we check valid, non-expired, government issued photo
+          identification in the store and at the door on every delivery. No ID, no sale,
+          and the order goes back to the room.
+        </p>
+        <p>
+          Buying cannabis for anyone under 21 is a crime in California, and we will refuse
+          any order we believe is being placed for a minor.
+        </p>
+
+        <h2>Our licences</h2>
+        <p>
+          We are licensed by the California Department of Cannabis Control.
+          {{ sawtelle.name }} operates under licence {{ sawtelle.license }} and
+          {{ westla.name }} under licence {{ westla.license }}. Cannabis remains illegal
+          under United States federal law; nothing we sell may be transported across a
+          state line.
+        </p>
+
+        <h2>Orders, prices and availability</h2>
+        <ul>
+          <li>An order placed on this site is an offer to buy. It is accepted when we confirm it, and we may decline any order.</li>
+          <li>The price shown already includes the day's discount. California cannabis excise tax and applicable sales taxes are added at checkout and shown before you confirm.</li>
+          <li>Prices, discounts and specials change without notice, and every deal runs while supplies last.</li>
+          <li>Menu stock reflects what is in the room at the time of loading. If something sells out between your order and our packing it, we will call you before substituting anything.</li>
+          <li>Potency figures come from the certificate of analysis for the batch physically on the shelf, and they change from batch to batch. They are the tested result, not a guarantee of effect.</li>
+          <li>We may correct an obvious pricing error and cancel an affected order, refunding anything already paid.</li>
+        </ul>
+
+        <h2>Delivery and pickup</h2>
+        <ul>
+          <li>Delivery is free on orders over {{ westla.deliveryMinimum }} within our service area, with no service charge added.</li>
+          <li>We deliver during the hours published for each room, and only to a physical address within our area. We cannot deliver to a school, a federal building, or a public place.</li>
+          <li>Delivery times are estimates. Traffic in Los Angeles is what it is.</li>
+          <li>An order placed outside delivery hours is held and goes out when delivery next opens.</li>
+          <li>The person receiving the order must be 21 or over and present the same identification and, where a card was used, the card itself.</li>
+          <li>If nobody is there, or the ID does not check out, the order returns to the room and we will call you.</li>
+        </ul>
+
+        <h2>Payment</h2>
+        <p>
+          We take cash, debit and credit. Debit requires a four digit PIN and carries a $3
+          bank processing fee, which is charged by the bank and not by us. Card numbers are
+          handled by our payment processor and are never stored on this website.
+        </p>
+
+        <h2>Returns</h2>
+        <p>
+          All sales are final, as California regulations require of licensed retailers. If
+          a product is defective, contact the room you bought it from on the same day and
+          we will make it right within what the regulations allow.
+        </p>
+
+        <h2>Gift cards</h2>
+        <p>
+          Digital gift cards are issued by Birchmount and are redeemable at both rooms in
+          store, on curbside pickup and on delivery. They carry no fees and do not expire.
+          A gift card does not exempt anyone from the age check. Purchasing one is subject
+          to Birchmount's terms as well as these.
+        </p>
+
+        <h2>Your account</h2>
+        <p>
+          You are responsible for what happens under your account and for keeping your
+          password to yourself. Tell us straight away if you think someone else has it. We
+          may suspend an account we believe is being used fraudulently or to obtain
+          cannabis for a minor.
+        </p>
+
+        <h2>Using this site</h2>
+        <p>
+          The text, photography, layout and code on this site belong to ERBA Markets or to
+          our licensors. You are welcome to read it, print it and link to it. You may not
+          republish it, sell it, or scrape it at volume. Brand names and logos belong to
+          the brands themselves.
+        </p>
+
+        <h2>Health</h2>
+        <p>
+          Nothing on this site is medical advice. Cannabis affects people differently and
+          can impair coordination and judgement. Do not drive or operate machinery after
+          using it. If you are pregnant or breastfeeding, or taking prescription
+          medication, talk to a doctor first. Keep everything you buy out of reach of
+          children and animals.
+        </p>
+        <p>
+          <strong>Proposition 65 warning.</strong> This product can expose you to chemicals
+          including marijuana smoke, which is known to the State of California to cause
+          cancer and reproductive harm. For more information go to
+          <a href="https://www.p65warnings.ca.gov/" target="_blank" rel="noopener">www.P65Warnings.ca.gov</a>.
+        </p>
+
+        <h2>Availability and liability</h2>
+        <p>
+          We try to keep this site up and accurate, but we do not promise it will always be
+          available or free of error. To the fullest extent California law allows, we are
+          not liable for indirect or consequential loss arising from using it. Nothing here
+          limits liability for death or personal injury caused by negligence, for fraud, or
+          for anything else that cannot lawfully be limited.
+        </p>
+
+        <h2>Linked services</h2>
+        <p>
+          Pages here link to services we do not run - Matterport, Birchmount, Google Maps -
+          and we are not responsible for their content or their practices.
+        </p>
+
+        <h2>Changes and governing law</h2>
+        <p>
+          We may update these terms; the current version is always the one on this page and
+          the date at the top says when it changed. These terms are governed by the laws of
+          the State of California, and the courts of Los Angeles County have jurisdiction.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Questions about these terms: <a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a>,
+          or ERBA Markets, {{ sawtelle.addressLine }}, Los Angeles, CA {{ sawtelle.postalCode }}.
+          See also our <a href="/privacy">privacy policy</a>.
+        </p>
+      </div>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

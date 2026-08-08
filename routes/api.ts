@@ -2,6 +2,7 @@ import { commerce } from '@stacksjs/commerce'
 import { log } from '@stacksjs/logging'
 import { response, route } from '@stacksjs/router'
 import Cart from '../app/Models/Cart'
+import Inquiry from '../app/Models/Inquiry'
 import Store from '../app/Models/Store'
 import Product from '../app/Models/Product'
 import CartItem from '../storage/framework/defaults/app/Models/commerce/CartItem'
@@ -231,6 +232,88 @@ route.post('/vip', async (request: any) => {
 })
 
 route.post('/vip/unsubscribe', 'Actions/UnsubscribeAction')
+
+/**
+ * The contact form and the careers application.
+ *
+ * Both land in the `inquiries` table, distinguished by `kind`, because they are
+ * the same shape underneath. Deliberately not the model's generated CRUD at
+ * /api/inquiries: that one is auth-gated staff-facing, and it would let a caller
+ * set `status` and `kind` themselves.
+ *
+ * A message that reaches the table but never reaches a person is the failure
+ * mode that matters here, so the write comes first and the notification second.
+ * If the mail transport is down the customer is still told we have it, and the
+ * row is in the inbox for whoever works it.
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+route.post('/contact', async (request: any) => {
+  const name = String(request.input('name', '')).trim()
+  const email = String(request.input('email', '')).trim().toLowerCase()
+  const subject = String(request.input('subject', '')).trim()
+  const message = String(request.input('message', '')).trim()
+
+  if (name.length < 2)
+    return response.badRequest('Please tell us your name.')
+
+  if (!EMAIL_PATTERN.test(email))
+    return response.badRequest('That email address does not look right.')
+
+  if (message.length < 10)
+    return response.badRequest('Please add a little more detail so we can help.')
+
+  await Inquiry.create({
+    kind: 'contact',
+    name,
+    email,
+    subject: subject.slice(0, 160) || 'Something else',
+    message: message.slice(0, 5000),
+    details: '{}',
+    status: 'new',
+  })
+
+  log.info(`[contact] ${email}: ${subject}`)
+
+  return response.created({ message: 'Thank you. We will come back to you within a business day.' })
+})
+
+route.post('/careers', async (request: any) => {
+  const name = String(request.input('name', '')).trim()
+  const email = String(request.input('email', '')).trim().toLowerCase()
+  const phone = String(request.input('phone', '')).trim()
+
+  if (name.length < 2)
+    return response.badRequest('Please tell us your name.')
+
+  if (!EMAIL_PATTERN.test(email))
+    return response.badRequest('That email address does not look right.')
+
+  // Hiring runs on the phone, so this one is required where the contact form
+  // leaves it optional.
+  if (phone.replace(/\D/g, '').length < 7)
+    return response.badRequest('Please add a phone number we can reach you on.')
+
+  const position = String(request.input('position', '')).trim() || 'Something else'
+
+  await Inquiry.create({
+    kind: 'careers',
+    name,
+    email,
+    phone: phone.slice(0, 40),
+    subject: position.slice(0, 160),
+    message: String(request.input('about', '')).trim().slice(0, 5000),
+    details: JSON.stringify({
+      location: String(request.input('location', '')).trim(),
+      availability: String(request.input('availability', '')).trim(),
+    }),
+    status: 'new',
+  })
+
+  log.info(`[careers] ${email} applied for ${position}`)
+
+  return response.created({ message: 'Thank you. Your application is with the team and we will be in touch.' })
+})
 
 /**
  * Geocode a delivery address and check it is somewhere we go.

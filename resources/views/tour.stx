@@ -1,0 +1,118 @@
+@layout('erba')
+
+@section('title')360 virtual tour - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/tour@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * The 360 tours.
+ *
+ * Matterport scans of both rooms, which the old site split across a /360 page
+ * for one and an outbound link for the other. Both live here.
+ *
+ * The scan ids are the ones the old site used. Note that its own Sawtelle page
+ * linked to the West LA scan, which is the sort of thing that survives a decade
+ * on a page nobody re-reads; the mapping below follows the homepage, where each
+ * tour sat under its own heading.
+ *
+ * The iframes are `loading="lazy"`: a Matterport embed pulls several megabytes
+ * of WebGL and there are two of them, so neither loads until it is scrolled to.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'Walk through both ERBA Markets dispensaries in West Los Angeles without leaving the house, in a full 360 degree tour.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const scans = {
+  'erba-sawtelle': 'Saah6AfccvV',
+  'erba-west-la': 'VvdNekd3BYv',
+}
+
+const tours = stores
+  .filter(store => scans[store.slug])
+  .map(store => ({
+    name: store.name,
+    slug: store.slug,
+    address: store.address,
+    mapUrl: store.mapUrl,
+    storeUrl: store.url,
+    hours: store.storeHours,
+    embed: `https://my.matterport.com/show/?m=${scans[store.slug]}&play=1&brand=0`,
+    open: `https://my.matterport.com/show/?m=${scans[store.slug]}`,
+  }))
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Virtual tour</p>
+          <h1>Walk the rooms from wherever you are</h1>
+          <p class="page-lede">
+            Both dispensaries scanned in 360 degrees. Drag to look around, click the
+            floor to move, and pinch to zoom.
+          </p>
+        </div>
+      </section>
+
+      <div class="shell tour">
+        @foreach (tours as tour)
+          <section aria-labelledby="tour-{{ tour.slug }}">
+            <div class="tour-head">
+              <div>
+                <h2 id="tour-{{ tour.slug }}">{{ tour.name }}</h2>
+                <p class="section-note" style="margin-top: 0.6rem;">
+                  <a href="{{ tour.mapUrl }}" target="_blank" rel="noopener">{{ tour.address }}</a>
+                  &middot; <span class="mono">{{ tour.hours }}</span>
+                </p>
+              </div>
+              <div class="store-actions">
+                <a href="{{ tour.open }}" target="_blank" rel="noopener" class="btn btn-ghost btn-small">Open full screen</a>
+                <a href="{{ tour.storeUrl }}" class="btn btn-ghost btn-small">Store details</a>
+              </div>
+            </div>
+
+            <div class="tour-frame" style="margin-top: 1.5rem;">
+              <iframe
+                src="{{ tour.embed }}"
+                title="360 degree virtual tour of {{ tour.name }}"
+                loading="lazy"
+                allowfullscreen
+                allow="fullscreen; xr-spatial-tracking"
+                referrerpolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
+          </section>
+        @endforeach
+
+        <section class="prose" style="padding-bottom: 0;">
+          <p>
+            Tours are hosted by Matterport, so loading one shares your request with them.
+            Prefer to see it in person? <a href="/contact">Come by</a>, or
+            <a href="/menu">order online</a> for delivery or curbside pickup.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

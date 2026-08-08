@@ -14,6 +14,12 @@ declare global {
   const decrement: typeof autoImports.decrement
   const reset: typeof autoImports.reset
   const count: typeof autoImports.count
+  const loadStores: typeof autoImports.loadStores
+  const loadCatalog: typeof autoImports.loadCatalog
+  const loadSpecials: typeof autoImports.loadSpecials
+  const loadSiteModel: typeof autoImports.loadSiteModel
+  const money: typeof autoImports.money
+  const telHref: typeof autoImports.telHref
 }
 
 export {}

@@ -21,74 +21,25 @@
  * put a customer in LA on Monday's deal while it is still Sunday evening for
  * them, or the reverse, depending on where the box happens to run.
  */
+import { loadSiteModel } from '../functions/site'
+
 const pageDescription = 'A deal every day of the week at ERBA Markets, from Tank Tuesday to Fresh Fruit Cup Friday. Free delivery over $30 across West LA.'
 
-const money = (cents) => `$${(cents / 100).toFixed(2).replace(/\.00$/, '')}`
+const site = await loadSiteModel()
 
-const storeRows = await Store.where('is_active', true).orderBy('display_order', 'asc').get()
-const stores = storeRows.map(row => ({
-  slug: row.slug,
-  shortName: row.short_name,
-  addressLine: row.address_line,
-  deliveryMinimum: money(row.delivery_minimum * 100),
-}))
+/* The header and footer partials read these by name. */
+const stores = site.stores
+const westla = site.westla
+const navCategories = site.navCategories
+const navBrands = site.navBrands
+const navFeature = site.navFeature
+const navProductCount = site.navProductCount
+const navDeliveryMinimum = site.navDeliveryMinimum
 
-const laToday = new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'long' })
-
-const specialRows = await Special.where('is_active', true).get()
-const dayOrder = [1, 2, 3, 4, 5, 6, 0]
-const allSpecials = specialRows
-  .slice()
-  .sort((a, b) => dayOrder.indexOf(a.day_of_week) - dayOrder.indexOf(b.day_of_week))
-  .map(row => ({
-    day: row.day_label,
-    short: String(row.day_label).slice(0, 3),
-    title: row.title,
-    offer: row.offer,
-    brands: JSON.parse(row.brands || '[]'),
-    storeOnly: row.store_slug ? (stores.find(store => store.slug === row.store_slug)?.shortName || '') : '',
-    isToday: row.day_label === laToday,
-  }))
-
-const todaySpecial = allSpecials.find(special => special.isToday) || null
+/* Already ordered Monday-first and flagged against the Los Angeles weekday. */
+const allSpecials = site.specials
+const todaySpecial = site.todaySpecial
 const restOfWeek = allSpecials.filter(special => !special.isToday)
-
-/* Nav model, same five names the shared header reads. */
-const categoryRows = await Category.where('is_active', true).orderBy('display_order', 'asc').get()
-const categories = categoryRows.map(row => ({ name: row.name, slug: row.slug }))
-const productRows = await Product.where('is_available', true).orderBy('is_featured', 'desc').get()
-const categorySlugById = new Map(categoryRows.map(row => [row.id, row.slug]))
-const brandRows = await Manufacturer.query().get()
-const brandNameById = new Map(brandRows.map(row => [row.id, row.manufacturer]))
-
-const products = productRows.map(row => ({
-  name: row.name,
-  category: categorySlugById.get(row.category_id) || 'flower',
-  brand: brandNameById.get(row.manufacturer_id) || '',
-  price: money(row.price),
-  image: row.image_url,
-}))
-
-const countBy = (key) => products.reduce((acc, product) => {
-  acc[product[key]] = (acc[product[key]] || 0) + 1
-  return acc
-}, {})
-
-const productsPerCategory = countBy('category')
-const navCategories = categories
-  .filter(category => productsPerCategory[category.slug] > 0)
-  .map(category => ({ ...category, count: productsPerCategory[category.slug] }))
-
-const productsPerBrand = countBy('brand')
-const navBrands = Object.entries(productsPerBrand)
-  .filter(([name]) => name)
-  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-  .slice(0, 6)
-  .map(([name, count]) => ({ name, count, query: encodeURIComponent(name) }))
-
-const navFeature = products.find(product => product.image) || null
-const navProductCount = products.length
-const navDeliveryMinimum = (stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]).deliveryMinimum
 
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
@@ -199,6 +150,8 @@ const bagCount = state(0)
         </div>
       </section>
     </main>
+
+    @include('site-footer')
 
     <script type="application/ld+json">{!! jsonLd !!}</script>
   </div>

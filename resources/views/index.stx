@@ -17,126 +17,44 @@
  * deals, brands and the menu itself. Nothing on this page is a hardcoded
  * price or a hardcoded phone number.
  *
- * Rows come back from the ORM in snake_case, so each query is mapped into a
- * small view model here and the markup below stays readable.
+ * The joins and the snake_case mapping live in resources/functions/site.ts,
+ * because the header and footer on every other route need the same shapes.
  */
-const siteName = 'ERBA Markets'
+import { loadSiteModel } from '../functions/site'
+
 const siteUrl = 'https://www.erbamarkets.com'
 const siteDescription = 'The premier cannabis destination in Los Angeles. Two West LA dispensaries with free delivery, curbside pickup and online ordering.'
 
-const money = (cents) => `$${(cents / 100).toFixed(2).replace(/\.00$/, '')}`
-
-const storeRows = await Store.where('is_active', true).orderBy('display_order', 'asc').get()
-const stores = storeRows.map(row => ({
-  name: row.name,
-  slug: row.slug,
-  shortName: row.short_name,
-  address: `${row.address_line}, ${row.city} ${row.state} ${row.postal_code}`,
-  addressLine: row.address_line,
-  storePhone: row.store_phone,
-  storePhoneHref: `tel:+1${String(row.store_phone).replace(/\D/g, '')}`,
-  deliveryPhone: row.delivery_phone,
-  deliveryPhoneHref: `tel:+1${String(row.delivery_phone).replace(/\D/g, '')}`,
-  email: row.email,
-  license: row.license_number,
-  storeHours: row.store_hours,
-  deliveryHours: row.delivery_hours,
-  pickupHours: row.pickup_hours,
-  amenities: JSON.parse(row.amenities || '[]'),
-  mapUrl: row.map_url,
-  image: row.image_url,
-  deliveryMinimum: money(row.delivery_minimum * 100),
-}))
-
-const categoryRows = await Category.where('is_active', true).orderBy('display_order', 'asc').get()
-const categories = categoryRows.map(row => ({ name: row.name, slug: row.slug, description: row.description }))
-
-const productRows = await Product.where('is_available', true).orderBy('is_featured', 'desc').get()
-const categorySlugById = new Map(categoryRows.map(row => [row.id, row.slug]))
-const brandRows = await Manufacturer.query().get()
-const brandNameById = new Map(brandRows.map(row => [row.id, row.manufacturer]))
-
-const products = productRows.map(row => ({
-  name: row.name,
-  slug: row.slug,
-  description: row.description,
-  category: categorySlugById.get(row.category_id) || 'flower',
-  brand: brandNameById.get(row.manufacturer_id) || '',
-  brandLine: row.brand_line,
-  strain: row.strain_type,
-  thc: row.thc_percentage ? `${Number(row.thc_percentage).toFixed(2)}%` : '',
-  cbd: row.cbd_percentage ? `${Number(row.cbd_percentage).toFixed(2)}%` : '',
-  unit: row.unit_size,
-  price: money(row.price),
-  wasPrice: row.compare_at_price > 0 ? money(row.compare_at_price) : '',
-  image: row.image_url,
-  rating: row.rating ? Number(row.rating).toFixed(1) : '',
-  reviews: row.review_count,
-}))
-
-const brands = brandRows.map(row => row.manufacturer)
+const site = await loadSiteModel()
 
 /*
- * Mega menu model.
+ * Named one at a time rather than destructured off `site`.
  *
- * A pure transform of what this page already queried, so the nav costs no
- * extra round trips. The menu page derives the same shape from its own rows;
- * `partials/site-nav` reads these five names and nothing else.
+ * stx lifts a server script's top-level declarations into the template context
+ * by reading the source, and it recognises a destructuring pattern only when
+ * the whole pattern is on one line. This page needs ten names, which is more
+ * than reads well on one, and a pattern wrapped across lines is silently not
+ * picked up: the block still executes, so `featuredProducts` below is correct,
+ * but the template prints `{{ stores }}` as literal text and every `@foreach`
+ * over one of these renders nothing.
  *
- * Counts are real. A category with nothing in stock is dropped rather than
- * shown as a dead link with a zero next to it.
+ * The shorter pages elsewhere destructure on a single line, which does work.
  */
-const countBy = (key) => products.reduce((acc, product) => {
-  acc[product[key]] = (acc[product[key]] || 0) + 1
-  return acc
-}, {})
+const stores = site.stores
+const sawtelle = site.sawtelle
+const westla = site.westla
+const brands = site.brands
+const todaySpecial = site.todaySpecial
+const navCategories = site.navCategories
+const navBrands = site.navBrands
+const navFeature = site.navFeature
+const navProductCount = site.navProductCount
+const navDeliveryMinimum = site.navDeliveryMinimum
 
-const productsPerCategory = countBy('category')
-const navCategories = categories
-  .filter(category => productsPerCategory[category.slug] > 0)
-  .map(category => ({ ...category, count: productsPerCategory[category.slug] }))
-
-const productsPerBrand = countBy('brand')
-const navBrands = Object.entries(productsPerBrand)
-  .filter(([name]) => name)
-  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-  .slice(0, 6)
-  // `query` is encoded here rather than in the template, because interpolation
-  // has no function calls available to it.
-  .map(([name, count]) => ({ name, count, query: encodeURIComponent(name) }))
-
-// Featured picks itself: the first flagged product that actually has a photo,
-// because the panel gives it a 4:3 frame and an empty one looks broken.
-/* Eight for the homepage. Ordered by is_featured already, so this is the
-   staff picks with a photo, which is what the grid frame needs. */
-const featuredProducts = products.filter(product => product.image).slice(0, 8)
-
-const navFeature = products.find(product => product.image) || null
-const navProductCount = products.length
-// Read off `stores` rather than `westla`, which is declared further down.
-const navDeliveryMinimum = (stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]).deliveryMinimum
-
-const specialRows = await Special.where('is_active', true).get()
-const dayOrder = [1, 2, 3, 4, 5, 6, 0]
-const specials = specialRows
-  .slice()
-  .sort((a, b) => dayOrder.indexOf(a.day_of_week) - dayOrder.indexOf(b.day_of_week))
-  .map(row => ({
-    day: row.day_label,
-    short: String(row.day_label).slice(0, 3),
-    title: row.title,
-    offer: row.offer,
-    brands: JSON.parse(row.brands || '[]'),
-    storeOnly: row.store_slug ? (stores.find(store => store.slug === row.store_slug)?.shortName || '') : '',
-  }))
-
-/* The customer's day, not the box's. A server in Europe would otherwise put
-   an LA visitor on tomorrow's deal all evening. */
-const laToday = new Date().toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'long' })
-const todaySpecial = specials.find(special => special.day === laToday) || null
-
-const sawtelle = stores.find(store => store.slug === 'erba-sawtelle') || stores[0]
-const westla = stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]
+/* Eight for the homepage, not the whole catalogue: /menu owns the full list.
+   Already ordered by is_featured, so this is the staff picks that have a
+   photo, which is what the grid frame needs. */
+const featuredProducts = site.products.filter(product => product.image).slice(0, 8)
 
 const deliveryFacts = [
   {
@@ -586,6 +504,7 @@ onMount(() => {
                   </div>
 
                   <div class="store-actions">
+                    <a href="{{ store.url }}" class="btn btn-ghost btn-small">Store details</a>
                     <a href="{{ store.mapUrl }}" target="_blank" rel="noopener" class="btn btn-ghost btn-small">Directions</a>
                     <a href="mailto:{{ store.email }}" class="btn btn-ghost btn-small">Email the team</a>
                   </div>
@@ -644,56 +563,7 @@ onMount(() => {
       </section>
     </main>
 
-    <footer class="footer">
-      <div class="shell">
-        <div class="footer-grid">
-          <div>
-            <a href="#top" class="wordmark" aria-label="ERBA Markets, back to top">
-              <img src="/images/erba-logo.png" alt="ERBA Markets" width="1500" height="732" loading="lazy" decoding="async">
-            </a>
-            <div class="footer-hours">
-              <p>{{ westla.addressLine }}</p>
-              <p>Los Angeles, CA 90064</p>
-              <p><a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a></p>
-            </div>
-          </div>
-
-          <div>
-            <h3>Shop</h3>
-            <ul>
-              <li><a href="#menu">Order online</a></li>
-              <li><a href="#specials">Daily specials</a></li>
-              <li><a href="#delivery">Delivery and pickup</a></li>
-              <li><a href="#story">Our story</a></li>
-            </ul>
-          </div>
-
-          @foreach (stores as store)
-            <div>
-              <h3>{{ store.name }}</h3>
-              <div class="footer-hours">
-                <p class="mono">Store {{ store.storeHours }}</p>
-                <p class="mono">Delivery {{ store.deliveryHours }}</p>
-                <p class="mono"><a href="{{ store.storePhoneHref }}">{{ store.storePhone }}</a></p>
-                <p class="mono">License {{ store.license }}</p>
-              </div>
-            </div>
-          @endforeach
-        </div>
-
-        <div class="footer-legal">
-          <p>Prop 65 warning. This product can expose you to chemicals including marijuana smoke, which is known to the State of California to cause cancer and reproductive harm. For more information go to <a href="https://www.p65warnings.ca.gov/" target="_blank" rel="noopener">www.P65Warnings.ca.gov</a>. Keep out of reach of children and animals. For use only by adults 21 and older.</p>
-          <div>
-            <nav class="footer-social" aria-label="Social">
-              <a href="https://www.instagram.com/erba_sawtelle" target="_blank" rel="noopener">Instagram</a>
-              <a href="https://www.facebook.com/Erbamarkets/" target="_blank" rel="noopener">Facebook</a>
-              <a href="https://www.yelp.com/biz/erba-sawtelle-los-angeles-2" target="_blank" rel="noopener">Yelp</a>
-            </nav>
-            <p style="margin-top: 1.25rem;">&copy; ERBA Markets 2026</p>
-          </div>
-        </div>
-      </div>
-    </footer>
+    @include('site-footer')
 
     <!-- Bag drawer. The cart itself lives in the commerce tables; this reads it. -->
     <div class="drawer-scrim" :if="bagOpen()" @click="bagOpen.set(false)"></div>

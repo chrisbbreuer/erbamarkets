@@ -1,0 +1,162 @@
+@layout('erba')
+
+@section('title')Delivery and curbside pickup - ERBA Markets West LA@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/delivery@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Delivery and pickup, in full.
+ *
+ * The homepage answers this in six tiles because that is as much as somebody
+ * on their way to the menu wants. This page is the version the old site called
+ * "quick facts": hours per room, what a driver can take as payment, what
+ * happens to an order placed at midnight.
+ *
+ * Every number is read from the store rows. The one thing on this page that is
+ * not in the database is the $3 debit fee, which belongs to the customer's
+ * bank rather than to us.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'Free delivery across West Los Angeles with no service charge, plus curbside pickup. Hours, payment, timings and coverage.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const facts = [
+  {
+    title: 'No delivery fee',
+    body: `Free to your door on orders over ${westla.deliveryMinimum}. There is no service charge on top, and the price on the menu already includes the day's discount.`,
+    tone: 'accent',
+  },
+  {
+    title: 'Curbside pickup',
+    body: `Order ahead, park outside, and we bring it out. You get a text when the bag is ready. ${westla.shortName} runs pickup ${westla.pickupHours}.`,
+    image: '/images/erba/sawtelle-entrance.jpg',
+  },
+  {
+    title: '45 to 60 minutes',
+    body: 'Typical time from checkout to doorstep. You get a link to follow the driver once the order leaves the room.',
+    tone: 'tint',
+  },
+  {
+    title: 'Cash, debit and credit',
+    body: 'Debit needs a four digit PIN and carries a $3 bank processing fee. Call your bank if you have never set a PIN. There is an ATM in both rooms.',
+  },
+  {
+    title: 'Drivers take tips',
+    body: 'Cash, or add it to the card when the driver arrives. They keep all of it.',
+  },
+  {
+    title: 'Ordered after hours?',
+    body: 'Nothing is lost. The order holds in the queue and goes out when delivery opens again the next morning.',
+    image: '/images/erba/people.jpg',
+  },
+]
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Delivery and pickup</p>
+          <h1>Free delivery, no added fees</h1>
+          <p class="page-lede">
+            Both rooms deliver across the Westside and both do curbside pickup.
+            Enter your address at checkout and we confirm we can reach it before
+            anything is charged.
+          </p>
+          <div class="hero-actions" style="margin-top: 2rem;">
+            <a href="/menu" class="btn btn-primary">Start an order</a>
+            <a href="/track" class="btn btn-ghost">Track a delivery</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell">
+          <div class="bento">
+            @foreach (facts as fact)
+              <article class="fact reveal {{ fact.tone === 'accent' ? 'fact--accent' : '' }} {{ fact.tone === 'tint' ? 'fact--tint' : '' }} {{ fact.image ? 'fact--image on-media' : '' }}">
+                @if (fact.image)
+                  <img src="{{ fact.image }}" alt="" width="900" height="700" loading="lazy" decoding="async">
+                @endif
+                <h3>{{ fact.title }}</h3>
+                <p>{{ fact.body }}</p>
+              </article>
+            @endforeach
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--ink-sunken); padding-top: 0;">
+        <div class="shell">
+          <div class="section-head reveal" style="padding-top: clamp(3rem, 6vw, 5rem);">
+            <p class="eyebrow">Hours by room</p>
+            <h2>Who is running when</h2>
+          </div>
+
+          <div class="stores">
+            @foreach (stores as store)
+              <article class="store reveal">
+                <div class="store-body">
+                  <h3>{{ store.name }}</h3>
+                  <p class="store-address"><a href="{{ store.mapUrl }}" target="_blank" rel="noopener">{{ store.address }}</a></p>
+
+                  <dl class="store-rows">
+                    <div class="store-row"><dt>Store hours</dt><dd class="mono">{{ store.storeHours }}</dd></div>
+                    <div class="store-row"><dt>Delivery</dt><dd class="mono">{{ store.deliveryHours }}</dd></div>
+                    <div class="store-row"><dt>Curbside pickup</dt><dd class="mono">{{ store.pickupHours }}</dd></div>
+                    <div class="store-row"><dt>Delivery minimum</dt><dd class="mono">{{ store.deliveryMinimum }}</dd></div>
+                    <div class="store-row"><dt>Delivery phone</dt><dd class="mono"><a href="{{ store.deliveryPhoneHref }}">{{ store.deliveryPhone }}</a></dd></div>
+                    <div class="store-row"><dt>Delivery email</dt><dd class="mono"><a href="mailto:{{ store.email }}">{{ store.email }}</a></dd></div>
+                  </dl>
+
+                  <div class="store-actions">
+                    <a href="{{ store.url }}" class="btn btn-ghost btn-small">Store details</a>
+                    <a href="{{ store.mapUrl }}" target="_blank" rel="noopener" class="btn btn-ghost btn-small">Directions</a>
+                  </div>
+                </div>
+              </article>
+            @endforeach
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell prose">
+          <h2>One thing worth knowing</h2>
+          <p>
+            <strong>THC varies from batch to batch.</strong> Cannabis is a crop, and two
+            harvests of the same strain test differently. The potency printed against a
+            product is the figure from the certificate of analysis for the batch that is
+            physically on the shelf, so it moves when the batch does. Ask any budtender
+            for the certificate on a specific jar.
+          </p>
+          <p>
+            More questions are answered on the <a href="/faqs">FAQ page</a>, and the team
+            will take the rest on <a href="/contact">the contact page</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

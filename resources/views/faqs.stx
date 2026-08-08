@@ -1,0 +1,245 @@
+@layout('erba')
+
+@section('title')FAQs - ERBA Markets West Los Angeles@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/faqs@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Frequently asked questions.
+ *
+ * Carried over from the questions the old site actually answered, minus the
+ * 2021 pandemic notices - masks, a 25-person cap, floor markers - which stopped
+ * being true years ago and which a customer reading them today would take as a
+ * sign nobody maintains the page.
+ *
+ * Hours, phone numbers and the delivery minimum are read from the store rows
+ * rather than typed here, because an FAQ that disagrees with the footer is
+ * worse than no FAQ. `<details>` rather than a scripted accordion: it opens to
+ * find-in-page, works without JavaScript, and the browser owns the keyboard.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'Hours, payment, ID, parking, delivery times and fees at ERBA Markets in West Los Angeles.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const rawGroups = [
+  {
+    id: 'general',
+    title: 'General',
+    items: [
+      {
+        q: 'What are your store hours?',
+        a: [
+          `${sawtelle.name} is open ${sawtelle.storeHours}. ${westla.name} is open ${westla.storeHours}.`,
+          `At ${westla.shortName} the doors close at 9:50PM, last call is 9:55PM, and every transaction is finished by 10PM.`,
+        ],
+      },
+      {
+        q: 'How old do I have to be?',
+        a: ['Twenty-one with a valid government issued ID, or eighteen with a valid California medical recommendation. We check every time, including at the door for delivery.'],
+      },
+      {
+        q: 'What forms of identification do you accept?',
+        a: ['Any valid, non-expired, government issued photo identification. A passport, a driver licence or a state ID card all work. We cannot accept an expired one, and we cannot accept a photograph of one.'],
+      },
+      {
+        q: 'What forms of payment do you accept in store?',
+        a: [`${sawtelle.shortName} takes cash and debit. ${westla.shortName} takes cash and debit card. Debit needs a four digit PIN and carries a $3 bank processing fee, which is the bank's, not ours. Call your bank if you have never set a PIN.`],
+      },
+      {
+        q: 'Is there an ATM on site?',
+        a: ['Yes, in both rooms.'],
+      },
+      {
+        q: 'Do you have parking?',
+        a: [`Yes. Both rooms have a lot with a limited number of spaces, and there is street parking nearby. ${sawtelle.shortName} also has valet.`],
+      },
+      {
+        q: 'Do you offer discounts?',
+        a: ['There is a deal every day of the week, and the price on the menu already includes it. Members of the VIP list hear about drops and members-only pricing first.'],
+        links: [
+          { label: 'See this week', href: '/specials' },
+        ],
+      },
+      {
+        q: 'I would like to work at ERBA. How do I apply?',
+        a: ['Send us an application and we will come back to you.'],
+        links: [
+          { label: 'Careers', href: '/careers' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'delivery',
+    title: 'Delivery and pickup',
+    items: [
+      {
+        q: 'What are your delivery hours?',
+        a: [`${sawtelle.name} delivers ${sawtelle.deliveryHours}. ${westla.name} delivers ${westla.deliveryHours}.`],
+      },
+      {
+        q: 'What are your curbside pickup hours?',
+        a: [`${sawtelle.name}: ${sawtelle.pickupHours}. ${westla.name}: ${westla.pickupHours}.`],
+      },
+      {
+        q: 'Is there a delivery fee?',
+        a: [`No. Delivery is free on orders over ${westla.deliveryMinimum} and we do not add a service charge on top of it.`],
+      },
+      {
+        q: 'Which areas do you deliver to?',
+        a: ['Most of the Westside. Enter your address at checkout and we confirm we can reach it before anything is charged.'],
+        links: [
+          { label: 'Start an order', href: '/menu' },
+        ],
+      },
+      {
+        q: 'How long does delivery take?',
+        a: ['Forty-five to sixty minutes from checkout to your door on an average day. You get a link to follow the driver once the order is out.'],
+      },
+      {
+        q: 'What if I order outside delivery hours?',
+        a: ['Nothing is lost. The order holds in the queue and goes out when delivery opens again.'],
+      },
+      {
+        q: 'What can I pay with on a delivery?',
+        a: ['Cash, debit and credit. Debit needs a four digit PIN and carries the same $3 bank processing fee as in store.'],
+      },
+      {
+        q: 'Do drivers accept tips?',
+        a: ['Yes, in cash or added to the card when they arrive. Drivers keep all of it.'],
+      },
+      {
+        q: 'I have a question about my order. Who do I call?',
+        a: [
+          `${sawtelle.name}: ${sawtelle.deliveryPhone}, ${sawtelle.deliveryHours}, or ${sawtelle.email}.`,
+          `${westla.name}: ${westla.deliveryPhone}, ${westla.deliveryHours}, or ${westla.email}.`,
+        ],
+      },
+    ],
+  },
+  {
+    id: 'products',
+    title: 'Products and compliance',
+    items: [
+      {
+        q: 'Why does the THC number change between batches of the same product?',
+        a: ['Because cannabis is a crop. Two harvests of one strain test differently, and the figure on the menu is the figure from the certificate of analysis for the batch on the shelf. It is the number, not a target.'],
+      },
+      {
+        q: 'Are your products lab tested?',
+        a: ['Everything we sell is tested by a licensed California laboratory before it reaches the floor, as state law requires. Ask any budtender for the certificate of analysis on a specific batch.'],
+      },
+      {
+        q: 'Can I return something?',
+        a: ['All sales are final, which is what state law requires of us. If a product is defective, call the room you bought it from the same day and we will make it right.'],
+      },
+      {
+        q: 'Proposition 65 warning',
+        a: ['This product can expose you to chemicals including marijuana smoke, which is known to the State of California to cause cancer and reproductive harm.'],
+        links: [
+          { label: 'www.P65Warnings.ca.gov', href: 'https://www.p65warnings.ca.gov/' },
+        ],
+      },
+      {
+        q: 'What are your licence numbers?',
+        a: stores.map(store => `${store.name}: ${store.license}`),
+      },
+    ],
+  },
+]
+
+/*
+ * Every item gets a `links` array whether or not it has any.
+ *
+ * A server-side `@foreach` over an undefined name warns on each render, and
+ * wrapping the loop in `@if (item.links)` does not prevent it - the loop is
+ * still evaluated. Normalising here is both quieter and simpler than guarding
+ * at each use.
+ */
+const groups = rawGroups.map(group => ({
+  ...group,
+  items: group.items.map(item => ({ ...item, links: item.links ?? [] })),
+}))
+
+/*
+ * FAQPage structured data, built from the same array the page renders, so the
+ * rich result and the page can never drift.
+ */
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  'mainEntity': groups.flatMap(group => group.items.map(item => ({
+    '@type': 'Question',
+    'name': item.q,
+    'acceptedAnswer': { '@type': 'Answer', 'text': item.a.join(' ') },
+  }))),
+})
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Answers</p>
+          <h1>Frequently asked questions</h1>
+          <p class="page-lede">
+            Hours, payment, identification, parking and how delivery actually works.
+            If your question is not here, the team will answer it.
+          </p>
+          <div class="hero-actions" style="margin-top: 2rem;">
+            <a href="/contact" class="btn btn-primary btn-small">Contact us</a>
+            <a href="/menu" class="btn btn-ghost btn-small">Browse the menu</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="shell">
+        @foreach (groups as group)
+          <section class="qa-group" id="{{ group.id }}" aria-labelledby="{{ group.id }}-title">
+            <h2 id="{{ group.id }}-title">{{ group.title }}</h2>
+            <div class="qa-list">
+              @foreach (group.items as item)
+                <details class="qa">
+                  <summary>{{ item.q }}</summary>
+                  <div class="qa-answer">
+                    @foreach (item.a as paragraph)
+                      <p>{{ paragraph }}</p>
+                    @endforeach
+                    <p class="qa-links">
+                      @foreach (item.links as link)
+                        <a href="{{ link.href }}">{{ link.label }}</a>
+                      @endforeach
+                    </p>
+                  </div>
+                </details>
+              @endforeach
+            </div>
+          </section>
+        @endforeach
+      </div>
+    </main>
+
+    @include('site-footer')
+
+    <script type="application/ld+json">{!! jsonLd !!}</script>
+  </div>
+</template>
+@endsection

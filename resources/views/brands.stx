@@ -1,0 +1,157 @@
+@layout('erba')
+
+@section('title')Brands we carry - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/brands@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/menu.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * The brands we carry.
+ *
+ * The old page was a wall of logo images hotlinked from a CDN, several of them
+ * for brands that have not been on the shelf in years. This reads the
+ * manufacturer table instead, so a brand appears here exactly when something of
+ * theirs is in stock, and every tile is a live filter into the menu rather than
+ * a picture.
+ *
+ * Brands with nothing in stock are listed separately rather than hidden: a
+ * customer looking for one wants to know we carry it and it is out, not to be
+ * told it does not exist.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'The cannabis brands stocked at ERBA Markets in West Los Angeles, from flower and pre-rolls to cartridges, edibles and wellness.'
+
+const { stores, sawtelle, westla, products, brands, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const countsByBrand = products.reduce((acc, product) => {
+  if (product.brand)
+    acc[product.brand] = (acc[product.brand] || 0) + 1
+  return acc
+}, {})
+
+/* In stock first, most-carried first, then alphabetical within a tie. */
+const inStock = Object.entries(countsByBrand)
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .map(([name, count]) => ({
+    name,
+    count,
+    label: count === 1 ? '1 product' : `${count} products`,
+    href: `/menu?brand=${encodeURIComponent(name)}`,
+  }))
+
+const outOfStock = brands
+  .filter(name => name && !countsByBrand[name])
+  .sort((a, b) => a.localeCompare(b))
+
+/* The categories those brands sit in, as a second way into the same menu. */
+const categoryTiles = navCategories.map(category => ({
+  ...category,
+  href: `/menu?category=${category.slug}`,
+  label: category.count === 1 ? '1 product' : `${category.count} products`,
+}))
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Brands</p>
+          <h1>The brands on our shelves</h1>
+          <p class="page-lede">
+            We keep looking for brands worth carrying, and we drop the ones that stop
+            earning it. Everything below is in the room right now, with the count from
+            the live menu beside it.
+          </p>
+          <p class="page-meta">{{ navProductCount }} products in stock today</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell">
+          <div class="section-head reveal" style="margin-bottom: 2.25rem;">
+            <h2>In stock now</h2>
+          </div>
+
+          <div class="brand-wall">
+            @foreach (inStock as brand)
+              <a class="brand-cell" href="{{ brand.href }}">
+                <span class="brand-cell-name">{{ brand.name }}</span>
+                <span class="brand-cell-count">{{ brand.label }}</span>
+              </a>
+            @endforeach
+          </div>
+        </div>
+      </section>
+
+      @if (outOfStock.length)
+        <section class="section" style="padding-top: 0;">
+          <div class="shell prose">
+            <h2>Also carried</h2>
+            <p>
+              These are brands we stock but which are between deliveries right now. Join
+              the <a href="/#vip">VIP list</a> and we will tell you when they land.
+            </p>
+            <ul>
+              @foreach (outOfStock as name)
+                <li>{{ name }}</li>
+              @endforeach
+            </ul>
+          </div>
+        </section>
+      @endif
+
+      <section class="section" style="background: var(--ink-sunken);">
+        <div class="shell">
+          <div class="section-head reveal" style="margin-bottom: 2.25rem;">
+            <p class="eyebrow">Or start here</p>
+            <h2>Shop by category</h2>
+          </div>
+
+          <div class="brand-wall">
+            @foreach (categoryTiles as category)
+              <a class="brand-cell" href="{{ category.href }}">
+                <span class="brand-cell-name">{{ category.name }}</span>
+                <span class="brand-cell-count">{{ category.label }}</span>
+              </a>
+            @endforeach
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell prose">
+          <h2>Bringing a brand to ERBA</h2>
+          <p>
+            We take submissions from licensed California cultivators and manufacturers.
+            Send the line sheet, the lab results and your licence number to
+            <a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a> and the buying
+            team will come back to you.
+          </p>
+          <p>
+            Brands already on the shelf run in-store days at both rooms through the year.
+            <a href="/contact">Get in touch</a> to put one in the calendar.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

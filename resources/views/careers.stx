@@ -1,0 +1,230 @@
+@layout('erba')
+
+@section('title')Careers - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/careers@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Careers.
+ *
+ * The old application form asked for three previous employers up front, which
+ * is a lot to type into a website before anyone has replied to you. This asks
+ * for what a first conversation actually needs - who you are, which room, what
+ * hours - and leaves employment history to the interview.
+ *
+ * The equal opportunity statement is carried over verbatim in substance,
+ * because it is a legal notice rather than copy.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'Work at ERBA Markets in West Los Angeles. Apply to join the team at our Sawtelle or West LA dispensary.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const positions = [
+  'Budtender',
+  'Shift lead',
+  'Delivery driver',
+  'Inventory and receiving',
+  'Security',
+  'Management',
+  'Something else',
+]
+
+const availability = [
+  'Weekday mornings',
+  'Weekday afternoons',
+  'Weekday evenings',
+  'Weekends',
+  'Any shift',
+]
+</script>
+
+<script client>
+/**
+ * The application posts to /api/careers. A button rather than a native submit,
+ * so a failure is reported next to the form instead of navigating away from
+ * everything that was typed.
+ */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+
+const csrfToken = useCookie('X-CSRF-Token')
+
+const applyName = state('')
+const applyEmail = state('')
+const applyPhone = state('')
+const applyLocation = state('')
+const applyPosition = state('Budtender')
+const applyAvailability = state('Any shift')
+const applyAbout = state('')
+const applyBusy = state(false)
+const applySaid = state('')
+const applyFailed = state(false)
+
+const applyReady = derived(() =>
+  applyName().trim().length > 1
+  && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(applyEmail().trim())
+  && applyPhone().trim().length > 6,
+)
+
+async function sendApplication() {
+  if (!applyReady() || applyBusy())
+    return
+
+  applyBusy.set(true)
+  applyFailed.set(false)
+
+  try {
+    const res = await fetch('/api/careers', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() || '' },
+      body: JSON.stringify({
+        name: applyName().trim(),
+        email: applyEmail().trim(),
+        phone: applyPhone().trim(),
+        location: applyLocation(),
+        position: applyPosition(),
+        availability: applyAvailability(),
+        about: applyAbout().trim(),
+      }),
+    })
+
+    const body = await res.json()
+
+    if (!res.ok) {
+      applyFailed.set(true)
+      applySaid.set(body?.message || 'That did not go through. Try again in a moment.')
+      return
+    }
+
+    applySaid.set(body?.message || 'Thank you. Your application is with the team.')
+    applyName.set('')
+    applyEmail.set('')
+    applyPhone.set('')
+    applyAbout.set('')
+  }
+  catch {
+    applyFailed.set(true)
+    applySaid.set('We could not reach the store. Check your connection and try again.')
+  }
+  finally {
+    applyBusy.set(false)
+  }
+}
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Careers</p>
+          <h1>Work at ERBA</h1>
+          <p class="page-lede">
+            Our staff come from every corner of this industry, and the thing they have in
+            common is that they give people a straight answer. If that sounds like you,
+            send us an application.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell">
+          <div class="form-card">
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label for="apply-name">Name</label>
+                <input id="apply-name" type="text" autocomplete="name" placeholder="Your name" x-model.trim="applyName">
+              </div>
+              <div class="field">
+                <label for="apply-email">Email</label>
+                <input id="apply-email" type="email" autocomplete="email" placeholder="you@example.com" x-model.trim="applyEmail">
+              </div>
+            </div>
+
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label for="apply-phone">Mobile</label>
+                <input id="apply-phone" type="tel" autocomplete="tel" placeholder="310 555 0142" x-model.trim="applyPhone">
+              </div>
+              <div class="field">
+                <label for="apply-location">Which room</label>
+                <select id="apply-location" x-model="applyLocation">
+                  <option value="">Either</option>
+                  @foreach (stores as store)
+                    <option value="{{ store.name }}">{{ store.name }}</option>
+                  @endforeach
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label for="apply-position">Position</label>
+                <select id="apply-position" x-model="applyPosition">
+                  @foreach (positions as position)
+                    <option value="{{ position }}">{{ position }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="field">
+                <label for="apply-availability">Availability</label>
+                <select id="apply-availability" x-model="applyAvailability">
+                  @foreach (availability as slot)
+                    <option value="{{ slot }}">{{ slot }}</option>
+                  @endforeach
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="apply-about">Anything we should know</label>
+              <textarea id="apply-about" placeholder="Where you have worked, what you are good at, when you can start" x-model.trim="applyAbout"></textarea>
+            </div>
+
+            <div>
+              <button type="button" class="btn btn-primary" :disabled="applyBusy() || !applyReady()" @click="sendApplication()">Send application</button>
+            </div>
+
+            <p class="form-status" :if="!applySaid()">
+              You must be 21 or older to work in a licensed California dispensary.
+            </p>
+            <p class="form-status" data-state="said" :if="applySaid() &amp;&amp; !applyFailed()">{{ applySaid() }}</p>
+            <p class="form-status" data-state="failed" :if="applyFailed()">{{ applySaid() }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--ink-sunken); padding-top: 0;">
+        <div class="shell prose" style="padding-top: clamp(3rem, 6vw, 5rem);">
+          <h2>Equal opportunity</h2>
+          <p>
+            ERBA is an equal opportunity employer. This application will not be used to
+            limit or exclude any applicant from consideration for employment on a basis
+            prohibited by local, state or federal law.
+          </p>
+          <p>
+            ERBA complies with the Americans with Disabilities Act and considers
+            reasonable accommodation measures that may be necessary for eligible
+            applicants and employees to perform essential functions. If you need a
+            reasonable accommodation during the application process, please
+            <a href="/contact">contact us</a> and a company representative will arrange it.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

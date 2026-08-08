@@ -22,9 +22,9 @@
  * from a fixed list, so the menu can never offer a filter that matches
  * nothing.
  */
-const pageDescription = 'The full ERBA Markets menu: flower, pre-rolls, cartridges, edibles, concentrates and wellness, with live prices and potency.'
+import { loadSiteModel } from '../functions/site'
 
-const money = (cents) => `$${(cents / 100).toFixed(2).replace(/\.00$/, '')}`
+const pageDescription = 'The full ERBA Markets menu: flower, pre-rolls, cartridges, edibles, concentrates and wellness, with live prices and potency.'
 
 /**
  * Quote a brand name for use inside a client-side expression attribute.
@@ -35,71 +35,26 @@ const money = (cents) => `$${(cents / 100).toFixed(2).replace(/\.00$/, '')}`
  */
 const brandJson = (name) => JSON.stringify(String(name || ''))
 
-const storeRows = await Store.where('is_active', true).orderBy('display_order', 'asc').get()
-const stores = storeRows.map(row => ({
-  slug: row.slug,
-  shortName: row.short_name,
-  deliveryMinimum: money(row.delivery_minimum * 100),
-}))
+const site = await loadSiteModel()
 
-const categoryRows = await Category.where('is_active', true).orderBy('display_order', 'asc').get()
-const categories = categoryRows.map(row => ({ name: row.name, slug: row.slug, description: row.description }))
+/* The header and footer partials read these by name. */
+const stores = site.stores
+const westla = site.westla
+const navCategories = site.navCategories
+const navBrands = site.navBrands
+const navFeature = site.navFeature
+const navProductCount = site.navProductCount
+const navDeliveryMinimum = site.navDeliveryMinimum
 
-const productRows = await Product.where('is_available', true).orderBy('is_featured', 'desc').get()
-const categorySlugById = new Map(categoryRows.map(row => [row.id, row.slug]))
-const categoryNameBySlug = new Map(categoryRows.map(row => [row.slug, row.name]))
-const brandRows = await Manufacturer.query().get()
-const brandNameById = new Map(brandRows.map(row => [row.id, row.manufacturer]))
-
-const products = productRows.map(row => ({
-  id: row.id,
-  name: row.name,
-  slug: row.slug,
-  description: row.description,
-  category: categorySlugById.get(row.category_id) || 'flower',
-  categoryName: categoryNameBySlug.get(categorySlugById.get(row.category_id)) || 'Flower',
-  brand: brandNameById.get(row.manufacturer_id) || '',
-  strain: row.strain_type || '',
-  unit: row.unit_size || '',
-  priceCents: row.price,
-  price: money(row.price),
-  wasPrice: row.compare_at_price > 0 ? money(row.compare_at_price) : '',
-  thc: row.thc_percentage ? `${Number(row.thc_percentage).toFixed(1)}%` : '',
-  thcValue: Number(row.thc_percentage || 0),
-  cbd: row.cbd_percentage ? `${Number(row.cbd_percentage).toFixed(1)}%` : '',
-  image: row.image_url,
-  rating: row.rating ? Number(row.rating).toFixed(1) : '',
-  featured: row.is_featured ? 1 : 0,
-}))
+const categories = site.categories
+const products = site.products
 
 /* Filter options, derived from stock rather than declared. */
 const strains = [...new Set(products.map(product => product.strain).filter(Boolean))].sort()
 const brandsInStock = [...new Set(products.map(product => product.brand).filter(Boolean))].sort()
 
-/* The shared header reads these five names. Same shape as the storefront. */
-const countBy = (key) => products.reduce((acc, product) => {
-  acc[product[key]] = (acc[product[key]] || 0) + 1
-  return acc
-}, {})
-
-const productsPerCategory = countBy('category')
-const navCategories = categories
-  .filter(category => productsPerCategory[category.slug] > 0)
-  .map(category => ({ ...category, count: productsPerCategory[category.slug] }))
-
-const productsPerBrand = countBy('brand')
-const navBrands = Object.entries(productsPerBrand)
-  .filter(([name]) => name)
-  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-  .slice(0, 6)
-  .map(([name, count]) => ({ name, count, query: encodeURIComponent(name) }))
-
 /* Slug to display name, so the category chip can print "Pre-Rolls" not "pre-rolls". */
 const categoryNames = Object.fromEntries(categories.map(category => [category.slug, category.name]))
-
-const navFeature = products.find(product => product.image) || null
-const navProductCount = products.length
-const navDeliveryMinimum = (stores.find(store => store.slug === 'erba-west-la') || stores[stores.length - 1]).deliveryMinimum
 
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
@@ -466,6 +421,8 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
       </div>
     </section>
   </main>
+
+  @include('site-footer')
 
   <script type="application/ld+json">{!! jsonLd !!}</script>
   </div>

@@ -1,0 +1,201 @@
+@layout('erba')
+
+@section('title'){{ pageTitle }}@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/stores/{{ store.slug }}@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * One dispensary.
+ *
+ * The old site had a hand-written page per room, which is how ERBA Sawtelle
+ * ended up advertising "curbside pickup hours: TBA" for three years and how
+ * the two pages came to disagree about which phone number reaches delivery.
+ * This is one template over the store rows, so a change to the hours in the
+ * database is a change on the page, the footer, the FAQ and the schema at once.
+ *
+ * An unknown slug falls back to the first room rather than 404ing, because the
+ * only ways to get here are the nav, the footer and the old /erba-sawtelle
+ * redirects - all of which point at rooms that exist.
+ */
+import { loadSiteModel } from '../../functions/site'
+
+const { stores, sawtelle, westla, products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const requested = String((typeof slug !== 'undefined' && slug) || params?.slug || '')
+const store = stores.find(row => row.slug === requested) || stores[0]
+const otherStore = stores.find(row => row.slug !== store.slug) || null
+
+const pageTitle = `${store.name} - ${store.addressLine}, Los Angeles`
+const pageDescription = `${store.name} at ${store.addressLine}, Los Angeles. Open ${store.storeHours}, delivery ${store.deliveryHours}, curbside pickup ${store.pickupHours}.`
+
+/* Matterport scans, same ids the 360 page uses. */
+const scans = {
+  'erba-sawtelle': 'Saah6AfccvV',
+  'erba-west-la': 'VvdNekd3BYv',
+}
+const tourUrl = scans[store.slug] ? `https://my.matterport.com/show/?m=${scans[store.slug]}` : ''
+
+/* A handful of what is on the shelf, as a reason to keep scrolling. */
+const shelf = products.filter(product => product.image).slice(0, 4)
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Store',
+  'name': store.name,
+  'image': `https://erba.stacksjs.com${store.image}`,
+  'telephone': store.storePhone,
+  'email': store.email,
+  'url': `https://erba.stacksjs.com${store.url}`,
+  'address': {
+    '@type': 'PostalAddress',
+    'streetAddress': store.addressLine,
+    'addressLocality': store.city,
+    'addressRegion': store.state,
+    'postalCode': store.postalCode,
+    'addressCountry': 'US',
+  },
+  'geo': {
+    '@type': 'GeoCoordinates',
+    'latitude': store.latitude,
+    'longitude': store.longitude,
+  },
+  'hasMap': store.mapUrl,
+})
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="hero">
+        <div class="shell hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow">{{ store.city }}, {{ store.state }}</p>
+            <h1 class="rise">{{ store.name }}</h1>
+            <p class="hero-sub rise rise-2">
+              <a href="{{ store.mapUrl }}" target="_blank" rel="noopener">{{ store.address }}</a>
+            </p>
+            <div class="hero-actions rise rise-3">
+              <a href="/menu" class="btn btn-primary">Order online</a>
+              <a href="{{ store.mapUrl }}" target="_blank" rel="noopener" class="btn btn-ghost">Directions</a>
+            </div>
+          </div>
+
+          <figure class="hero-figure rise rise-2">
+            <img src="{{ store.image }}" alt="{{ store.name }}" width="1600" height="1067" fetchpriority="high" decoding="async">
+          </figure>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell">
+          <div class="stores">
+            <article class="store">
+              <div class="store-body">
+                <h2>Hours and contact</h2>
+
+                <dl class="store-rows">
+                  <div class="store-row"><dt>Store hours</dt><dd class="mono">{{ store.storeHours }}</dd></div>
+                  <div class="store-row"><dt>Delivery</dt><dd class="mono">{{ store.deliveryHours }}</dd></div>
+                  <div class="store-row"><dt>Curbside pickup</dt><dd class="mono">{{ store.pickupHours }}</dd></div>
+                  <div class="store-row"><dt>Store phone</dt><dd class="mono"><a href="{{ store.storePhoneHref }}">{{ store.storePhone }}</a></dd></div>
+                  <div class="store-row"><dt>Delivery phone</dt><dd class="mono"><a href="{{ store.deliveryPhoneHref }}">{{ store.deliveryPhone }}</a></dd></div>
+                  <div class="store-row"><dt>Email</dt><dd class="mono"><a href="mailto:{{ store.email }}">{{ store.email }}</a></dd></div>
+                  <div class="store-row"><dt>Delivery minimum</dt><dd class="mono">{{ store.deliveryMinimum }}</dd></div>
+                  <div class="store-row"><dt>License</dt><dd class="mono">{{ store.license }}</dd></div>
+                </dl>
+
+                <div class="store-tags">
+                  @foreach (store.amenities as amenity)
+                    <span class="tag">{{ amenity }}</span>
+                  @endforeach
+                </div>
+
+                <div class="store-actions">
+                  <a href="/menu" class="btn btn-primary btn-small">Order online</a>
+                  @if (tourUrl)
+                    <a href="/tour" class="btn btn-ghost btn-small">360 tour</a>
+                  @endif
+                  <a href="/contact" class="btn btn-ghost btn-small">Contact</a>
+                </div>
+              </div>
+            </article>
+
+            <article class="store">
+              <div class="store-body">
+                <h2>Getting here</h2>
+                <p class="section-note">
+                  There is a lot with a limited number of spaces and street parking
+                  nearby. Bring valid, non-expired government issued ID: 21 and over, or
+                  18 with a California medical recommendation.
+                </p>
+
+                <div class="store-actions" style="margin-top: 1.75rem;">
+                  <a href="{{ store.mapUrl }}" target="_blank" rel="noopener" class="btn btn-ghost btn-small">Open in Maps</a>
+                  <a href="{{ store.storePhoneHref }}" class="btn btn-ghost btn-small">Call the room</a>
+                </div>
+
+                @if (otherStore)
+                  <p class="section-note" style="margin-top: 2rem;">
+                    Closer to {{ otherStore.shortName }}? That room is at
+                    <a href="{{ otherStore.url }}">{{ otherStore.addressLine }}</a>,
+                    open <span class="mono">{{ otherStore.storeHours }}</span>.
+                  </p>
+                @endif
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--ink-sunken);">
+        <div class="shell">
+          <div class="menu-top reveal">
+            <div class="section-head">
+              <p class="eyebrow">On the shelf</p>
+              <h2>A few things in stock</h2>
+            </div>
+            <a href="/menu" class="btn btn-ghost btn-small">Browse all {{ navProductCount }}</a>
+          </div>
+
+          <div class="grid">
+            @foreach (shelf as product)
+              <article class="card">
+                <div class="card-media">
+                  <img src="{{ product.image }}" alt="{{ product.name }} by {{ product.brand }}" width="900" height="1100" loading="lazy" decoding="async">
+                  <span class="card-strain on-media">{{ product.strain }}</span>
+                </div>
+                <p class="card-brand">{{ product.brand }}</p>
+                <h3>{{ product.name }}</h3>
+                <p class="card-potency mono">THC {{ product.thc }} &middot; CBD {{ product.cbd }}</p>
+                <div class="card-foot">
+                  <p class="card-price mono">{{ product.price }}<span class="card-unit"> / {{ product.unit }}</span></p>
+                  <a href="/menu" class="btn btn-ghost btn-small">View</a>
+                </div>
+              </article>
+            @endforeach
+          </div>
+        </div>
+      </section>
+    </main>
+
+    @include('site-footer')
+
+    <script type="application/ld+json">{!! jsonLd !!}</script>
+  </div>
+</template>
+@endsection

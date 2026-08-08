@@ -1,0 +1,98 @@
+{{--
+  The site footer, shared by every page.
+
+  It used to live inline in index.stx, which is why /menu and /specials
+  reached the bottom of the page and simply stopped: no addresses, no license
+  numbers, no Prop 65 notice. That notice is not decoration - California
+  requires it wherever the products are offered - so the footer belongs on
+  every route, not on the one page that happened to grow it first.
+
+  Reads `stores` and `westla` from the including page's scope, both of which
+  come out of `loadSiteModel()` in resources/functions/site.ts.
+--}}
+<footer class="footer">
+  <div class="shell">
+    <div class="footer-grid">
+      <div>
+        <a href="/" class="wordmark" aria-label="ERBA Markets, home">
+          <img src="/images/erba-logo.png" alt="ERBA Markets" width="1500" height="732" loading="lazy" decoding="async">
+        </a>
+        <div class="footer-hours">
+          <p>{{ westla.addressLine }}</p>
+          <p>Los Angeles, CA {{ westla.postalCode }}</p>
+          <p><a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a></p>
+        </div>
+        <nav class="footer-social" aria-label="Social" style="margin-top: 1.25rem;">
+          <a href="https://www.instagram.com/erba_sawtelle" target="_blank" rel="noopener">Instagram</a>
+          <a href="https://www.facebook.com/Erbamarkets/" target="_blank" rel="noopener">Facebook</a>
+          <a href="https://www.yelp.com/biz/erba-sawtelle-los-angeles-2" target="_blank" rel="noopener">Yelp</a>
+        </nav>
+      </div>
+
+      <div>
+        <h3>Shop</h3>
+        <ul>
+          <li><a href="/menu">Order online</a></li>
+          <li><a href="/specials">Daily specials</a></li>
+          <li><a href="/brands">Brands</a></li>
+          <li><a href="/gift-cards">Gift cards</a></li>
+          <li><a href="/track">Track a delivery</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>Visit</h3>
+        <ul>
+          @foreach (stores as store)
+            <li><a href="{{ store.url }}">{{ store.name }}</a></li>
+          @endforeach
+          <li><a href="/tour">Virtual tour</a></li>
+          <li><a href="/delivery">Delivery and pickup</a></li>
+          <li><a href="/contact">Contact us</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>Company</h3>
+        <ul>
+          <li><a href="/story">Our story</a></li>
+          <li><a href="/faqs">FAQs</a></li>
+          <li><a href="/careers">Careers</a></li>
+          <li><a href="/accessibility">Accessibility</a></li>
+          <li><a href="/privacy">Privacy policy</a></li>
+          <li><a href="/terms">Terms &amp; conditions</a></li>
+        </ul>
+      </div>
+    </div>
+
+    {{--
+      Hours, phones and license numbers per room. The license number is the
+      one piece of footer copy a customer is ever asked to read back to a
+      regulator, so it is printed rather than linked to.
+    --}}
+    <div class="footer-stores">
+      @foreach (stores as store)
+        <div class="footer-store">
+          <h3>{{ store.name }}</h3>
+          <div class="footer-hours">
+            <p><a href="{{ store.mapUrl }}" target="_blank" rel="noopener">{{ store.addressLine }}, LA, CA {{ store.postalCode }}</a></p>
+            <p class="mono">Store {{ store.storeHours }}</p>
+            <p class="mono">Delivery {{ store.deliveryHours }}</p>
+            <p class="mono">Pickup {{ store.pickupHours }}</p>
+            <p class="mono"><a href="{{ store.storePhoneHref }}">{{ store.storePhone }}</a> store</p>
+            <p class="mono"><a href="{{ store.deliveryPhoneHref }}">{{ store.deliveryPhone }}</a> delivery</p>
+            <p class="mono">License {{ store.license }}</p>
+          </div>
+        </div>
+      @endforeach
+    </div>
+
+    <div class="footer-legal">
+      <p>Prop 65 warning. This product can expose you to chemicals including marijuana smoke, which is known to the State of California to cause cancer and reproductive harm. For more information go to <a href="https://www.p65warnings.ca.gov/" target="_blank" rel="noopener">www.P65Warnings.ca.gov</a>. Keep out of reach of children and animals. For use only by adults 21 and older.</p>
+      <div>
+        <p>&copy; ERBA Markets 2026</p>
+        <p style="margin-top: 0.5rem;">Licensed by the California Department of Cannabis Control.</p>
+      </div>
+    </div>
+  </div>
+</footer>

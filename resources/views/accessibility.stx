@@ -1,0 +1,121 @@
+@layout('erba')
+
+@section('title')Accessibility - ERBA Markets@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/accessibility@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Accessibility statement.
+ *
+ * This is deliberately not a port of the old one. That page described a
+ * third-party overlay widget - font resizing, contrast profiles, an "AI engine"
+ * rewriting the DOM every 24 hours - and a separate statement for the Jane
+ * menu. This site runs none of that: no overlay, no third-party menu iframe.
+ * Republishing the old text would have claimed features that are not here,
+ * which is worse for a screen reader user than claiming nothing.
+ *
+ * What is described below is what the site actually does, and the commitment
+ * is the same WCAG 2.1 AA target the old statement named.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'How ERBA Markets approaches web accessibility, the standard we build to, and how to tell us when we have missed.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const updated = 'February 2026'
+</script>
+
+<script client>
+/* Only the shared header needs client state on this page. */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Accessibility</p>
+          <h1>Accessibility statement</h1>
+          <p class="page-lede">
+            We want anyone to be able to read the menu, place an order and find the room,
+            whatever they are using to do it.
+          </p>
+          <p class="page-meta">Last updated {{ updated }}</p>
+        </div>
+      </section>
+
+      <div class="shell prose">
+        <h2>The standard we build to</h2>
+        <p>
+          We aim to meet the Web Content Accessibility Guidelines 2.1 at level AA,
+          published by the World Wide Web Consortium. Those guidelines are what we
+          measure against when we build something new and when we review something old.
+        </p>
+
+        <h2>What that means in practice</h2>
+        <p>
+          Rather than layering an accessibility widget over the site, the site itself is
+          built to work with the tools people already use. Specifically:
+        </p>
+        <ul>
+          <li>Every page is server-rendered HTML. The menu, the prices and the store details are in the document, so a screen reader or a text browser reads a complete page rather than waiting on scripts.</li>
+          <li>Everything interactive is a real button, link, input or <code>&lt;details&gt;</code> element, so keyboard navigation, focus order and the Escape key behave the way the browser intends.</li>
+          <li>Text meets AA contrast in both the light and the dark theme. The theme follows your system by default and can be switched from the header; the choice is remembered.</li>
+          <li>Content is structured with landmarks and headings in order, so skipping between sections works.</li>
+          <li>Photographs carry alternative text, and images that are purely decorative are marked so assistive technology skips them.</li>
+          <li>Nothing autoplays sound, and nothing flashes.</li>
+          <li>Layouts reflow to narrow screens and to 200% zoom without a horizontal scrollbar.</li>
+        </ul>
+
+        <h2>Where we know we fall short</h2>
+        <p>
+          The 360 virtual tours are Matterport embeds. A three-dimensional scan of a room
+          is inherently visual and we do not control that player, so it is not fully
+          keyboard or screen reader accessible. Everything the tour shows - the address,
+          the hours, the amenities, the layout of the counters - is written out on the
+          <a href="/contact">contact page</a> and on each store page. If you would like a
+          description of a room before visiting, call us and we will walk you through it.
+        </p>
+
+        <h2>In our stores</h2>
+        <p>
+          Both rooms are step-free from the parking lot and have accessible counter space.
+          If you need assistance when you arrive, call ahead on
+          <a href="{{ sawtelle.storePhoneHref }}">{{ sawtelle.storePhone }}</a> for
+          {{ sawtelle.shortName }} or
+          <a href="{{ westla.storePhoneHref }}">{{ westla.storePhone }}</a> for
+          {{ westla.shortName }} and a member of staff will meet you outside.
+        </p>
+
+        <h2>Tell us when we get it wrong</h2>
+        <p>
+          If something on this site is hard to use, does not read correctly, or stops you
+          finishing an order, we want to hear about it rather than guess. Email
+          <a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a> with what you were
+          trying to do and what you were using, or send it through
+          <a href="/contact">the contact form</a>. We answer within a business day and we
+          will tell you what we are doing about it.
+        </p>
+        <p>
+          If a page is blocking you right now, call the room and we will take the order
+          over the phone.
+        </p>
+      </div>
+    </main>
+
+    @include('site-footer')
+  </div>
+</template>
+@endsection

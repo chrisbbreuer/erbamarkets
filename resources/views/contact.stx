@@ -1,0 +1,235 @@
+@layout('erba')
+
+@section('title')Contact - ERBA Markets West Los Angeles@endsection
+
+@section('description'){{ pageDescription }}@endsection
+
+@section('canonical')https://erba.stacksjs.com/contact@endsection
+
+@section('ogImage')https://erba.stacksjs.com/social/og.jpg@endsection
+
+@section('content')
+<script server>
+/**
+ * Contact.
+ *
+ * Two halves, in the order a customer needs them: the phone numbers first,
+ * because most people arriving here want to ask about an order that is already
+ * placed and a call answers that in a minute, and the form second for anything
+ * that is not urgent.
+ *
+ * Every number, address and email is read from the store rows.
+ */
+import { loadSiteModel } from '../functions/site'
+
+const pageDescription = 'Call, email or write to ERBA Markets. Store and delivery numbers for both West Los Angeles rooms, and a form for everything else.'
+
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+
+const subjects = [
+  'An order I have placed',
+  'Delivery',
+  'A product question',
+  'Feedback about a visit',
+  'Brand or vendor enquiry',
+  'Something else',
+]
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': stores.map(store => ({
+    '@type': 'Store',
+    'name': store.name,
+    'telephone': store.storePhone,
+    'email': store.email,
+    'address': {
+      '@type': 'PostalAddress',
+      'streetAddress': store.addressLine,
+      'addressLocality': store.city,
+      'addressRegion': store.state,
+      'postalCode': store.postalCode,
+      'addressCountry': 'US',
+    },
+  })),
+})
+</script>
+
+<script client>
+/**
+ * The contact form posts to /api/contact, which stores the message and mails
+ * the team. It is a button rather than a native submit so a failure can be
+ * reported in place instead of navigating away from what was typed.
+ */
+const megaOpen = state(false)
+const bagOpen = state(false)
+const bagCount = state(0)
+
+const csrfToken = useCookie('X-CSRF-Token')
+
+const contactName = state('')
+const contactEmail = state('')
+const contactSubject = state('An order I have placed')
+const contactMessage = state('')
+const contactBusy = state(false)
+const contactSaid = state('')
+const contactFailed = state(false)
+
+const contactReady = derived(() =>
+  contactName().trim().length > 1
+  && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactEmail().trim())
+  && contactMessage().trim().length > 9,
+)
+
+async function sendContact() {
+  if (!contactReady() || contactBusy())
+    return
+
+  contactBusy.set(true)
+  contactFailed.set(false)
+
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() || '' },
+      body: JSON.stringify({
+        name: contactName().trim(),
+        email: contactEmail().trim(),
+        subject: contactSubject(),
+        message: contactMessage().trim(),
+      }),
+    })
+
+    const body = await res.json()
+
+    if (!res.ok) {
+      contactFailed.set(true)
+      contactSaid.set(body?.message || 'That did not go through. Try again, or call us.')
+      return
+    }
+
+    contactSaid.set(body?.message || 'Thank you. We will come back to you shortly.')
+    contactName.set('')
+    contactEmail.set('')
+    contactMessage.set('')
+  }
+  catch {
+    contactFailed.set(true)
+    contactSaid.set('We could not reach the store. Check your connection, or give us a call.')
+  }
+  finally {
+    contactBusy.set(false)
+  }
+}
+</script>
+
+<template>
+  <div data-stx-content>
+    @include('site-nav')
+
+    <main id="top">
+      <section class="page-head">
+        <div class="shell">
+          <p class="eyebrow">Contact</p>
+          <h1>Talk to us</h1>
+          <p class="page-lede">
+            For anything about an order already placed, calling the room is faster than
+            writing. For everything else, the form below reaches the team.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell">
+          <div class="stores">
+            @foreach (stores as store)
+              <article class="store reveal">
+                <div class="store-media">
+                  <img src="{{ store.image }}" alt="{{ store.name }}" width="1200" height="750" loading="lazy" decoding="async">
+                </div>
+                <div class="store-body">
+                  <h3>{{ store.name }}</h3>
+                  <p class="store-address"><a href="{{ store.mapUrl }}" target="_blank" rel="noopener">{{ store.address }}</a></p>
+
+                  <dl class="store-rows">
+                    <div class="store-row"><dt>Store hours</dt><dd class="mono">{{ store.storeHours }}</dd></div>
+                    <div class="store-row"><dt>Store phone</dt><dd class="mono"><a href="{{ store.storePhoneHref }}">{{ store.storePhone }}</a></dd></div>
+                    <div class="store-row"><dt>Delivery phone</dt><dd class="mono"><a href="{{ store.deliveryPhoneHref }}">{{ store.deliveryPhone }}</a></dd></div>
+                    <div class="store-row"><dt>Delivery hours</dt><dd class="mono">{{ store.deliveryHours }}</dd></div>
+                    <div class="store-row"><dt>Email</dt><dd class="mono"><a href="mailto:{{ store.email }}">{{ store.email }}</a></dd></div>
+                    <div class="store-row"><dt>License</dt><dd class="mono">{{ store.license }}</dd></div>
+                  </dl>
+
+                  <div class="store-tags">
+                    @foreach (store.amenities as amenity)
+                      <span class="tag">{{ amenity }}</span>
+                    @endforeach
+                  </div>
+
+                  <div class="store-actions">
+                    <a href="{{ store.mapUrl }}" target="_blank" rel="noopener" class="btn btn-ghost btn-small">Directions</a>
+                    <a href="{{ store.url }}" class="btn btn-ghost btn-small">Store details</a>
+                  </div>
+                </div>
+              </article>
+            @endforeach
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--ink-sunken);">
+        <div class="shell">
+          <div class="section-head reveal">
+            <p class="eyebrow">Write to us</p>
+            <h2>Send a message</h2>
+            <p class="section-note">
+              We read everything and answer within a business day. Press enquiries and
+              brand submissions go to <a href="mailto:info@erbamarkets.com">info@erbamarkets.com</a>.
+            </p>
+          </div>
+
+          <div class="form-card" style="margin-top: 2.5rem;">
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label for="contact-name">Name</label>
+                <input id="contact-name" type="text" autocomplete="name" placeholder="Your name" x-model.trim="contactName">
+              </div>
+              <div class="field">
+                <label for="contact-email">Email</label>
+                <input id="contact-email" type="email" autocomplete="email" placeholder="you@example.com" x-model.trim="contactEmail">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="contact-subject">Subject</label>
+              <select id="contact-subject" x-model="contactSubject">
+                @foreach (subjects as subject)
+                  <option value="{{ subject }}">{{ subject }}</option>
+                @endforeach
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="contact-message">Message</label>
+              <textarea id="contact-message" placeholder="Tell us what is going on" x-model.trim="contactMessage"></textarea>
+            </div>
+
+            <div>
+              <button type="button" class="btn btn-primary" :disabled="contactBusy() || !contactReady()" @click="sendContact()">Send message</button>
+            </div>
+
+            <p class="form-status" :if="!contactSaid()">
+              We never sell your details, and we only use them to answer you.
+            </p>
+            <p class="form-status" data-state="said" :if="contactSaid() &amp;&amp; !contactFailed()">{{ contactSaid() }}</p>
+            <p class="form-status" data-state="failed" :if="contactFailed()">{{ contactSaid() }}</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    @include('site-footer')
+
+    <script type="application/ld+json">{!! jsonLd !!}</script>
+  </div>
+</template>
+@endsection
