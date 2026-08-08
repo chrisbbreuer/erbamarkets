@@ -28,10 +28,20 @@ import { loadSiteModel } from '../../functions/site'
 const { stores, sawtelle, westla, products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
 
 const requested = String((typeof slug !== 'undefined' && slug) || params?.slug || '')
-const store = stores.find(row => row.slug === requested) || stores[0]
+const foundStore = stores.find(row => row.slug === requested) || null
+
+// A slug naming no room answers 404. Falling back to the other room returns
+// 200 for a URL that names nothing, which sends anyone following a stale link
+// to the wrong address without telling them.
+if (!foundStore)
+  setResponseStatus(404)
+
+const store = foundStore || stores[0]
 const otherStore = stores.find(row => row.slug !== store.slug) || null
 
-const pageTitle = `${store.name} - ${store.addressLine}, Los Angeles`
+const pageTitle = foundStore
+  ? `${store.name} - ${store.addressLine}, Los Angeles`
+  : 'Store not found - ERBA Markets'
 const pageDescription = `${store.name} at ${store.addressLine}, Los Angeles. Open ${store.storeHours}, delivery ${store.deliveryHours}, curbside pickup ${store.pickupHours}.`
 
 /* Matterport scans, same ids the 360 page uses. */
@@ -81,6 +91,19 @@ const bagCount = state(0)
     @include('site-nav')
 
     <main id="top">
+      @if (!foundStore)
+        <section class="section product-missing">
+          <div class="shell">
+            <p class="eyebrow">Not found</p>
+            <h1>That store page does not exist</h1>
+            <p class="section-note">Both West LA rooms are listed below.</p>
+            <div class="product-actions">
+              <a href="/#locations" class="btn btn-primary">See both stores</a>
+            </div>
+          </div>
+        </section>
+      @endif
+
       <section class="hero">
         <div class="shell hero-inner">
           <div class="hero-copy">

@@ -1,10 +1,10 @@
 @layout('erba')
 
-@section('title'){{ product.name }} by {{ product.brand }} - ERBA Markets@endsection
+@section('title'){{ pageTitle }}@endsection
 
 @section('description'){{ pageDescription }}@endsection
 
-@section('canonical')https://erba.stacksjs.com/products/{{ product.slug }}@endsection
+@section('canonical')https://erba.stacksjs.com{{ canonicalPath }}@endsection
 
 @section('ogImage')https://erba.stacksjs.com/social/menu.jpg@endsection
 
@@ -13,17 +13,30 @@
 /**
  * One product.
  *
- * An unknown slug falls back to the first available product rather than
- * 404ing, matching how /stores/[slug] behaves: a customer who followed a stale
- * link from a text message should land on something they can buy, not on an
- * error page.
+ * An unknown slug answers 404 rather than falling back to some other product.
+ * A fallback returns 200 for a URL that names something the shop does not
+ * sell, so a typo and a retired product both get indexed as real pages and a
+ * crawler never learns they are gone.
  */
 const { products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum, stores } = await loadSiteModel()
 
 const requested = String((typeof slug !== 'undefined' && slug) || params?.slug || '')
-const product = products.find(item => item.slug === requested) || products[0]
+const found = products.find(item => item.slug === requested) || null
 
-const pageDescription = product.description
+if (!found)
+  setResponseStatus(404)
+
+// Rendering still needs a shape. The markup below branches on `found`, so this
+// only exists to keep the not-found branch from having to null-guard.
+const product = found || products[0]
+
+const pageTitle = found
+  ? `${product.name} by ${product.brand} - ERBA Markets`
+  : 'Product not found - ERBA Markets'
+
+const pageDescription = !found
+  ? 'That product is no longer on the menu.'
+  : product.description
   ? String(product.description).slice(0, 160)
   : `${product.name} by ${product.brand}, ${product.thc} THC. Free delivery over ${navDeliveryMinimum} across West LA.`
 
@@ -35,6 +48,10 @@ const pageDescription = product.description
 const sameCategory = products.filter(item => item.category === product.category && item.slug !== product.slug)
 const others = products.filter(item => item.category !== product.category && item.slug !== product.slug)
 const related = [...sameCategory, ...others].slice(0, 4)
+
+/* A 404 points at the menu; pointing it at some other product would tell a
+   crawler this URL is that product. */
+const canonicalPath = found ? `/products/${product.slug}` : '/menu'
 
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
@@ -102,6 +119,24 @@ async function addToBag(productSlug) {
     @include('site-nav')
 
     <main id="top">
+      @if (!found)
+        <section class="section product-missing">
+          <div class="shell">
+            <p class="eyebrow">Not found</p>
+            <h1>That product is not on the menu</h1>
+            <p class="section-note">
+              It may have sold out or been retired. The menu below is what is on the
+              shelf right now.
+            </p>
+            <div class="product-actions">
+              <a href="/menu" class="btn btn-primary">Browse the menu</a>
+              <a href="/specials" class="btn btn-ghost">See this week's deals</a>
+            </div>
+          </div>
+        </section>
+      @endif
+
+      @if (found)
       <nav class="crumbs" aria-label="Breadcrumb">
         <div class="shell">
           <a href="/menu">Menu</a>
@@ -162,7 +197,9 @@ async function addToBag(productSlug) {
         </div>
       </section>
 
-      @if (related.length)
+      @endif
+
+      @if (found && related.length)
         <section class="section product-related-section">
           <div class="shell">
             <h2 class="product-related-title">More {{ product.categoryName }}</h2>
