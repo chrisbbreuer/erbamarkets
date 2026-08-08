@@ -18,13 +18,12 @@
  * context, so those names are then readable by `partials/site-nav` and
  * `partials/site-footer` without being plumbed through as props.
  *
- * Keep a destructuring pattern on ONE line. stx recognises it by reading the
- * source, and a pattern wrapped across several lines is not picked up - the
- * block still runs, so anything computed from it is right, but the template
- * prints `{{ stores }}` as literal text and every `@foreach` over one of those
- * names renders nothing. It fails only in the markup and says nothing. Where a
- * page needs more names than fit on a line, assign them one at a time off the
- * returned object, as `views/index.stx` does.
+ * A pattern spread across several lines is fine as of @stacksjs/stx 0.2.164.
+ * Before that only a single-line one was recognised, and a wrapped one was
+ * silently dropped: the block still ran, but the template printed
+ * `{{ stores }}` as literal text and every `@foreach` over one of those names
+ * rendered nothing. If those symptoms ever reappear, check the pinned stx
+ * version in package.json's `overrides` before looking at the data.
  *
  * Models are auto-imported as globals inside a view but not inside a plain
  * module, so they are imported here the way the framework's own code does it.

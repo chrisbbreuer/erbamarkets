@@ -93,10 +93,10 @@
     "better-dx": "^0.2.22"
   },
   "overrides": {
-    "@stacksjs/stx": "^0.2.158",
-    "@stacksjs/components": "^0.2.158",
-    "bun-plugin-stx": "^0.2.158",
-    "stx-router": "^0.2.158",
+    "@stacksjs/stx": "^0.2.164",
+    "@stacksjs/components": "^0.2.164",
+    "bun-plugin-stx": "^0.2.164",
+    "stx-router": "^0.2.164",
     "ts-images": "^0.2.8",
     "@stacksjs/image": "^0.70.318"
   }

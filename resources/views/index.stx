@@ -25,36 +25,24 @@ import { loadSiteModel } from '../functions/site'
 const siteUrl = 'https://www.erbamarkets.com'
 const siteDescription = 'The premier cannabis destination in Los Angeles. Two West LA dispensaries with free delivery, curbside pickup and online ordering.'
 
-const site = await loadSiteModel()
-
-/*
- * Named one at a time rather than destructured off `site`.
- *
- * stx lifts a server script's top-level declarations into the template context
- * by reading the source, and it recognises a destructuring pattern only when
- * the whole pattern is on one line. This page needs ten names, which is more
- * than reads well on one, and a pattern wrapped across lines is silently not
- * picked up: the block still executes, so `featuredProducts` below is correct,
- * but the template prints `{{ stores }}` as literal text and every `@foreach`
- * over one of these renders nothing.
- *
- * The shorter pages elsewhere destructure on a single line, which does work.
- */
-const stores = site.stores
-const sawtelle = site.sawtelle
-const westla = site.westla
-const brands = site.brands
-const todaySpecial = site.todaySpecial
-const navCategories = site.navCategories
-const navBrands = site.navBrands
-const navFeature = site.navFeature
-const navProductCount = site.navProductCount
-const navDeliveryMinimum = site.navDeliveryMinimum
+const {
+  stores,
+  sawtelle,
+  westla,
+  products,
+  brands,
+  todaySpecial,
+  navCategories,
+  navBrands,
+  navFeature,
+  navProductCount,
+  navDeliveryMinimum,
+} = await loadSiteModel()
 
 /* Eight for the homepage, not the whole catalogue: /menu owns the full list.
    Already ordered by is_featured, so this is the staff picks that have a
    photo, which is what the grid frame needs. */
-const featuredProducts = site.products.filter(product => product.image).slice(0, 8)
+const featuredProducts = products.filter(product => product.image).slice(0, 8)
 
 const deliveryFacts = [
   {
