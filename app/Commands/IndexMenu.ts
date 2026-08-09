@@ -72,7 +72,10 @@ export async function buildMenuDocuments(): Promise<MenuDocument[]> {
 
 export async function indexMenu(): Promise<number> {
   const documents = await buildMenuDocuments()
-  if (!documents.length)
+  // Destructured rather than length-checked so the sample below is a value
+  // TypeScript knows is present, not one it has to be told about twice.
+  const [sample] = documents
+  if (!sample)
     return 0
 
   const engine = await useTypesense()
@@ -93,9 +96,9 @@ export async function indexMenu(): Promise<number> {
       searchableAttributes: ['name', 'brand', 'description', 'strain', 'category'],
       filterableAttributes: ['category', 'brand', 'strain'],
       sortableAttributes: ['price', 'thc', 'rating', 'featured'],
-      displayedAttributes: Object.keys(documents[0]),
+      displayedAttributes: Object.keys(sample),
     },
-    sampleDocument: documents[0] as unknown as Record<string, unknown>,
+    sampleDocument: sample as unknown as Record<string, unknown>,
   })
 
   await engine.addDocuments(MENU_INDEX, documents as any)

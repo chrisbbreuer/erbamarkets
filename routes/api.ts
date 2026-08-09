@@ -366,7 +366,6 @@ route.post('/reviews', async (request: any) => {
      * runtime signature is correct and this path is covered by the commerce
      * package's own tests; the generated .d.ts is what is wrong.
      */
-    // @ts-expect-error generated parameter type resolves to never
     await commerce.products.reviews.store({
       product_id: product.id,
       customer_id: customer.id,

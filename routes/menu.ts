@@ -25,12 +25,19 @@ import Manufacturer from '../storage/framework/defaults/app/Models/commerce/Manu
 const MENU_INDEX = 'erba_products'
 
 /** Ordering the UI offers, mapped to how each backend expresses it. */
-const SORTS: Record<string, { engine: Record<string, string>, column: [string, 'asc' | 'desc'] }> = {
+const SORTS = {
   'featured': { engine: { featured: 'desc' }, column: ['is_featured', 'desc'] },
   'price-asc': { engine: { price: 'asc' }, column: ['price', 'asc'] },
   'price-desc': { engine: { price: 'desc' }, column: ['price', 'desc'] },
   'thc-desc': { engine: { thc: 'desc' }, column: ['thc_percentage', 'desc'] },
   'rating-desc': { engine: { rating: 'desc' }, column: ['rating', 'desc'] },
+} as const
+
+type SortKey = keyof typeof SORTS
+
+/** What arrives on the query string is whatever the visitor typed. */
+function isSortKey(value: string): value is SortKey {
+  return Object.hasOwn(SORTS, value)
 }
 
 interface MenuHit {
@@ -83,7 +90,7 @@ async function searchViaEngine(params: {
     query: params.query,
     queryBy: ['name', 'brand', 'description', 'strain', 'category'],
     filter: Object.keys(filter).length ? filter : undefined,
-    sort: SORTS[params.sort]?.engine,
+    sort: isSortKey(params.sort) ? SORTS[params.sort].engine : undefined,
     perPage: params.perPage,
   })
 
@@ -110,7 +117,7 @@ async function searchViaDatabase(params: {
   const categoryById = new Map(categories.map((row: any) => [row.id, row.slug]))
   const brandById = new Map(brands.map((row: any) => [row.id, row.manufacturer]))
 
-  const [column, direction] = SORTS[params.sort]?.column ?? SORTS.featured.column
+  const [column, direction] = SORTS[isSortKey(params.sort) ? params.sort : 'featured'].column
   const rows = await Product.where('is_available', true).orderBy(column, direction).get()
 
   const term = params.query.trim().toLowerCase()
