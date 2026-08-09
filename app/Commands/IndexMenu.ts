@@ -3,12 +3,7 @@ import process from 'node:process'
 import { log } from '@stacksjs/cli'
 import { useTypesense } from '@stacksjs/search-engine'
 import { ExitCode } from '@stacksjs/types'
-// Models are auto-imported as server globals in routes, actions and jobs, but
-// not in a buddy command, so they are imported the way the framework's own
-// code does it.
-import Category from '../../storage/framework/defaults/app/Models/commerce/Category'
-import Manufacturer from '../../storage/framework/defaults/app/Models/commerce/Manufacturer'
-import Product from '../Models/Product'
+import { loadCatalog } from '../../resources/functions/site'
 
 /**
  * Push the menu into Typesense.
@@ -43,30 +38,36 @@ export interface MenuDocument {
   featured: number
 }
 
+/**
+ * The documents the search box will match against.
+ *
+ * Built from `loadCatalog`, the same call the menu page renders from, so the
+ * index and the page cannot disagree about what is on sale. They did: the page
+ * learned to hide products no shop stocks and the index kept its own query, so
+ * searching turned up twenty hand-seeded items that were nowhere on the menu.
+ *
+ * Indexed without a store, which makes it the union of both shops. Search
+ * answers "do we sell this", and the card the customer lands on answers "at
+ * which counter" — narrowing the index per store would mean two collections
+ * and a search that goes quiet the moment someone switches shops.
+ */
 export async function buildMenuDocuments(): Promise<MenuDocument[]> {
-  const [products, categories, brands] = await Promise.all([
-    Product.where('is_available', true).get(),
-    Category.query().get(),
-    Manufacturer.query().get(),
-  ])
+  const { products } = await loadCatalog()
 
-  const categoryById = new Map(categories.map((row: any) => [row.id, row.slug]))
-  const brandById = new Map(brands.map((row: any) => [row.id, row.manufacturer]))
-
-  return products.map((row: any) => ({
-    id: String(row.id),
-    name: row.name ?? '',
-    slug: row.slug ?? '',
-    description: row.description ?? '',
-    category: categoryById.get(row.category_id) ?? 'flower',
-    brand: brandById.get(row.manufacturer_id) ?? '',
-    strain: row.strain_type ?? '',
-    unit: row.unit_size ?? '',
-    price: Number(row.price ?? 0),
-    thc: Number(row.thc_percentage ?? 0),
-    rating: Number(row.rating ?? 0),
-    image: row.image_url ?? '',
-    featured: row.is_featured ? 1 : 0,
+  return products.map(product => ({
+    id: String(product.id),
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    category: product.category,
+    brand: product.brand,
+    strain: product.strain,
+    unit: product.unit,
+    price: product.priceCents,
+    thc: product.thcValue,
+    rating: Number(product.rating || 0),
+    image: product.image,
+    featured: product.featured,
   }))
 }
 
@@ -126,7 +127,11 @@ export default function (cli: CLI): void {
         }
 
         const count = await indexMenu()
-        log.success(`Indexed ${count} products into '${MENU_INDEX}'`)
+
+        // `log.exit`, not `log.success` then `process.exit`: the logger writes
+        // asynchronously and the exit does not wait, so the count — the whole
+        // point of running this — never reached the terminal.
+        await log.exit(`Indexed ${count} products into '${MENU_INDEX}'`)
       }
       catch (error) {
         log.error('Could not index the menu. Is Typesense running? `pantry start typesense`')

@@ -358,6 +358,8 @@ export default function (buddy: CLI): void {
         process.exit(ExitCode.FatalError)
       }
 
-      process.exit(ExitCode.Success)
+      // Flushes first. A plain `process.exit` here dropped every line the run
+      // had just written, including the counts.
+      await log.exit()
     })
 }

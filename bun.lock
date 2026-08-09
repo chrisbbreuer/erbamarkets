@@ -5,9 +5,10 @@
     "": {
       "name": "stacks",
       "dependencies": {
+        "@stacksjs/logging": "0.70.348",
         "maplibre-gl": "^6.2.0",
         "pickier": "^0.1.49",
-        "stacks": "^0.70.337",
+        "stacks": "^0.70.346",
       },
       "devDependencies": {
         "better-dx": "^0.2.22",
@@ -174,7 +175,7 @@
 
     "@stacksjs/lint": ["@stacksjs/lint@0.70.346", "", { "dependencies": { "pickier": "^0.1.49" } }, "sha512-Bw9ktWCK/S8+4kRhchWM8Ntsni62VWLfvoMi6kFE0SVkVOeA4+4TjBc75qC5SNilCVGsm6pJmp4O5yz0sCS2ow=="],
 
-    "@stacksjs/logging": ["@stacksjs/logging@0.70.346", "", { "dependencies": { "@stacksjs/clarity": "^0.3.31" } }, "sha512-ksxIotZCJy0UTYllbr9UUv42/eVSgwnwHcn22bqbwAN7xiee2Jdf63iHQ1sYpxOT3TdmTIkHsF40aTyBDbhwEA=="],
+    "@stacksjs/logging": ["@stacksjs/logging@0.70.348", "", { "dependencies": { "@stacksjs/clarity": "^0.3.31" } }, "sha512-eQ6y2S0V0IEmgl63kQhjBXGS2QlFPxaJh6W4nUwlhUMIq+Wv5N8cUmzG1NUIwG1wsVDJ+HG3Dpdi1kIMDZ4u3g=="],
 
     "@stacksjs/logsmith": ["@stacksjs/logsmith@0.2.11", "", { "dependencies": { "@stacksjs/clapp": "^0.2.0", "bunfig": "^0.15.6", "pickier": "^0.1.9" }, "bin": { "@stacksjs/logsmith": "./dist/bin/cli.js", "logsmith": "./dist/bin/cli.js" } }, "sha512-wqqAxewpsHVDzpC+IRy+yYyGXGlv1j5GCqYTh8fL7d3LLhnRPN72PEQywM357burtORvdkFHfOzk3Ih1SMvuiw=="],
 
@@ -492,6 +493,8 @@
 
     "@stacksjs/browser-extension/ts-pantry": ["ts-pantry@0.11.12", "", { "dependencies": { "@stacksjs/ts-cloud": "^0.7.26", "bunfig": "^0.15.6", "ts-web-scraper": "^0.1.1" }, "bin": { "ts-pantry": "./dist/bin/cli.js" } }, "sha512-146XCJbLqS3/smBcB0pdaHwz2iuVORE6D0sAB+SsoMObms/4R7gCqIHv0T/wVEbV/42TEz0GVsLfMJ5eZ94gxw=="],
 
+    "@stacksjs/buddy/@stacksjs/logging": ["@stacksjs/logging@0.70.346", "", { "dependencies": { "@stacksjs/clarity": "^0.3.31" } }, "sha512-ksxIotZCJy0UTYllbr9UUv42/eVSgwnwHcn22bqbwAN7xiee2Jdf63iHQ1sYpxOT3TdmTIkHsF40aTyBDbhwEA=="],
+
     "@stacksjs/buddy/ts-pantry": ["ts-pantry@0.11.12", "", { "dependencies": { "@stacksjs/ts-cloud": "^0.7.26", "bunfig": "^0.15.6", "ts-web-scraper": "^0.1.1" }, "bin": { "ts-pantry": "./dist/bin/cli.js" } }, "sha512-146XCJbLqS3/smBcB0pdaHwz2iuVORE6D0sAB+SsoMObms/4R7gCqIHv0T/wVEbV/42TEz0GVsLfMJ5eZ94gxw=="],
 
     "@stacksjs/config/ts-pantry": ["ts-pantry@0.11.12", "", { "dependencies": { "@stacksjs/ts-cloud": "^0.7.26", "bunfig": "^0.15.6", "ts-web-scraper": "^0.1.1" }, "bin": { "ts-pantry": "./dist/bin/cli.js" } }, "sha512-146XCJbLqS3/smBcB0pdaHwz2iuVORE6D0sAB+SsoMObms/4R7gCqIHv0T/wVEbV/42TEz0GVsLfMJ5eZ94gxw=="],
@@ -505,5 +508,7 @@
     "@stacksjs/ts-analytics/bun-query-builder": ["bun-query-builder@0.1.63", "", { "dependencies": { "@stacksjs/clapp": "^0.2.0", "@stacksjs/ts-faker": "^0.1.8", "@stacksjs/ts-validation": "^0.5.0", "dynamodb-tooling": "^0.3.5" }, "bin": { "qb": "./dist/bin/cli.js", "qbx": "./dist/bin/cli.js", "query-builder": "./dist/bin/cli.js" } }, "sha512-cywlLKmwXCJAop8H7VwlHEbLKjy9KUfuyps1BGy4rkj2eSvMWU68bgkJlVC4+Q4rFFqMeGMXY78LyEgwU/QBDQ=="],
 
     "better-dx/pickier": ["pickier@0.1.43", "", { "dependencies": { "@stacksjs/clapp": "^0.2.3", "@stacksjs/clarity": "^0.3.24" }, "optionalDependencies": { "@stacksjs/ts-spell-check": "^0.1.0" }, "bin": { "pickier": "./dist/bin/cli.js" } }, "sha512-I2o69MxhLF/yXyfgHPshzJ9Np1g0WUwZS9R3fX12V7pYSGBdBfX+/r9VcZOJDuycsoRB2IzGknp3aqSypylzzw=="],
+
+    "stacks/@stacksjs/logging": ["@stacksjs/logging@0.70.346", "", { "dependencies": { "@stacksjs/clarity": "^0.3.31" } }, "sha512-ksxIotZCJy0UTYllbr9UUv42/eVSgwnwHcn22bqbwAN7xiee2Jdf63iHQ1sYpxOT3TdmTIkHsF40aTyBDbhwEA=="],
   }
 }

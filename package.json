@@ -73,6 +73,7 @@
     "stx": "./buddy"
   },
   "dependencies": {
+    "@stacksjs/logging": "0.70.348",
     "maplibre-gl": "^6.2.0",
     "pickier": "^0.1.49",
     "stacks": "^0.70.346"
