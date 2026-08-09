@@ -4,6 +4,7 @@ import { response, route } from '@stacksjs/router'
 import Cart from '../app/Models/Cart'
 import Inquiry from '../app/Models/Inquiry'
 import Store from '../app/Models/Store'
+import StoreProduct from '../app/Models/StoreProduct'
 import Product from '../app/Models/Product'
 import CartItem from '../storage/framework/defaults/app/Models/commerce/CartItem'
 import Customer from '../storage/framework/defaults/app/Models/commerce/Customer'
@@ -54,7 +55,28 @@ route.post('/bag', async (request: any) => {
   if (!product.is_available || product.inventory_count < 1)
     return response.badRequest(`${product.name} just sold out.`)
 
-  const cart = await currentCart(token, String(request.input('storeSlug', 'erba-west-la')))
+  /*
+   * The shop the bag belongs to.
+   *
+   * The client sends it, but the cookie is what the rest of the site reads, so
+   * the cookie wins and the parameter is only a fallback for a caller that has
+   * one and no cookie. Defaulting to a hardcoded slug — which is what this did
+   * — quietly builds a West LA bag for a customer who chose Sawtelle, and the
+   * mistake only surfaces at checkout.
+   */
+  const chosenStore = storeFromCookie(request) || String(request.input('storeSlug', '')) || ''
+  const cart = await currentCart(token, chosenStore)
+
+  // A bag holds one shop's stock. Anything already in it was added from
+  // somewhere else, so say so rather than mixing two counters silently.
+  if (chosenStore && cart.store_slug && cart.store_slug !== chosenStore) {
+    const stocked = await storeStocks(chosenStore, slug)
+
+    if (!stocked)
+      return response.badRequest(`${product.name} is not on the shelf at that shop today.`)
+
+    await Cart.where('id', cart.id).update({ storeSlug: chosenStore })
+  }
   const existing = await CartItem.where('cart_id', cart.id).where('product_sku', slug).first()
 
   if (existing) {
@@ -498,6 +520,30 @@ function cartToken(request: any): string {
 
   const fromHeader = request.headers?.get?.('x-bag-token') ?? ''
   return String(fromHeader).trim().slice(0, 64)
+}
+
+/** The shop chosen in the header, from the cookie the switcher sets. */
+function storeFromCookie(request: any): string {
+  const header = String(request.headers?.get?.('cookie') ?? '')
+  const match = header.match(/(?:^|;\s*)erba_store=([^;]+)/)
+
+  return decodeURIComponent(match?.[1] ?? '')
+}
+
+/** Whether a shop has a product on the shelf right now. */
+async function storeStocks(storeSlug: string, productSlug: string): Promise<boolean> {
+  const store = await Store.where('slug', storeSlug).first()
+  const product = await Product.where('slug', productSlug).first()
+
+  if (!store || !product)
+    return false
+
+  const row = await StoreProduct.where('store_id', store.id)
+    .where('product_id', product.id)
+    .where('is_available', true)
+    .first()
+
+  return Boolean(row)
 }
 
 async function currentCart(token: string, storeSlug: string): Promise<any> {

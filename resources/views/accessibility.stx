@@ -27,7 +27,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'How ERBA Markets approaches web accessibility, the standard we build to, and how to tell us when we have missed.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const updated = 'February 2026'
 </script>

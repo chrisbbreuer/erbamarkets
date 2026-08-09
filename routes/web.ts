@@ -161,3 +161,38 @@ route.get('/robots.txt', () => {
     },
   })
 })
+
+/**
+ * Choose which shop to order from.
+ *
+ * A plain GET that sets a cookie and sends the customer back where they were,
+ * so the switcher is an ordinary link. That matters more here than it usually
+ * would: picking a shop is the first thing a customer does and the last thing
+ * that should depend on scripts having loaded.
+ *
+ * `next` is checked to be a path on this site before it is used. An open
+ * redirect on a URL that sets a cookie is worth more to an attacker than most
+ * — it is a working phishing hop that looks like the dispensary's own domain.
+ */
+route.get('/store/{slug}/choose', async (request: any) => {
+  const slug = String(request.param('slug') ?? '')
+  const store = await Store.where('slug', slug).where('is_active', true).first()
+
+  const requested = String(request.query?.next ?? request.input?.('next') ?? '/menu')
+  // Same-origin path only: must start with a single slash, and `//host` is a
+  // protocol-relative URL to somewhere else.
+  const next = /^\/(?!\/)[\w\-./?=&%]*$/.test(requested) ? requested : '/menu'
+
+  if (!store)
+    return new Response(null, { status: 302, headers: { Location: next } })
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      'Location': next,
+      // A year: a customer's nearest dispensary does not change often, and the
+      // cost of getting it wrong is one click on the switcher.
+      'Set-Cookie': `erba_store=${encodeURIComponent(slug)}; Path=/; Max-Age=31536000; SameSite=Lax`,
+    },
+  })
+})

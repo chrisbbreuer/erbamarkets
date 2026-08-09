@@ -28,7 +28,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Walk through both ERBA Markets dispensaries in West Los Angeles without leaving the house, in a full 360 degree tour.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const scans = {
   'erba-sawtelle': 'Saah6AfccvV',

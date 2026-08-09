@@ -8,6 +8,52 @@
 
   Each including page declares `megaOpen` in its client script.
 --}}
+<script server>
+/**
+ * The switcher loads its own data.
+ *
+ * Every other value this partial reads — navCategories, navBrands, the bag
+ * signals — comes from the including page's scope, which is why the include
+ * exists. Doing the same for the store choice would have meant adding three
+ * names to the identical destructuring line in sixteen views, and another
+ * three the next time the header grows something.
+ *
+ * The cost is one query for the store list; `loadStores` is two rows and the
+ * page has already made five. Nothing else on the page needs the answer, so
+ * nothing else has to carry it.
+ */
+import { loadStores, resolveStoreSlug } from '../functions/site'
+
+const switchStores = await loadStores()
+
+/*
+ * `cookies` and `query` are stx's own per-request globals. The router's
+ * `request` proxy is empty here — pages are rendered by stx's server, not
+ * through the router — so reading it returns the safe defaults and the
+ * switcher would show "Pick a shop" to someone who had already picked.
+ */
+const switchCurrentSlug = resolveStoreSlug(switchStores, {
+  cookies: typeof cookies !== 'undefined' ? cookies : {},
+  query: typeof query !== 'undefined' ? query : {},
+})
+
+const switchCurrent = switchStores.find(store => store.slug === switchCurrentSlug) || null
+
+/*
+ * Where to return after choosing. Rebuilt from the path stx routed and the
+ * query it parsed, minus `store` itself so the old choice cannot outvote the
+ * new one on the way back.
+ */
+const switchNext = (() => {
+  const params = new URLSearchParams(typeof query !== 'undefined' ? query : {})
+  params.delete('store')
+  const search = params.toString()
+  const path = typeof currentPath !== 'undefined' && currentPath ? currentPath : '/menu'
+
+  return encodeURIComponent(search ? `${path}?${search}` : path)
+})()
+</script>
+
 <header class="nav">
   <div class="nav-inner">
     <a href="/" class="wordmark" aria-label="ERBA Markets, home">
@@ -159,6 +205,49 @@
         Bag
         <span class="bag-count mono" :if="bagCount() > 0">{{ bagCount() }}</span>
       </button>
+      {{--
+        Which shop the order comes from, and the switch.
+
+        In the nav rather than on the menu page because it decides the price of
+        everything on every page, and because a customer who has not chosen yet
+        should be asked before they fill a bag they then have to rebuild. A
+        plain link per shop, not a dropdown: there are two, and a `<select>`
+        that needs scripts to do anything would be a worse control for the one
+        decision the whole storefront hangs on.
+      --}}
+      @if (switchStores.length > 1)
+        <div class="store-switch">
+          @if (switchCurrent)
+            <span class="store-switch-label">{{ switchCurrent.shortName }}</span>
+          @else
+            <span class="store-switch-label store-switch-label-none">Pick a shop</span>
+          @endif
+          <div class="store-switch-menu">
+            @foreach (switchStores as store)
+              <a
+                class="store-switch-option {{ store.slug === switchCurrentSlug ? 'is-current' : '' }}"
+                href="/store/{{ store.slug }}/choose?next={{ switchNext }}"
+              >
+                {{ store.shortName }}
+                {{--
+                  A shop with no inventory feed is still a shop: it trades, it
+                  answers the phone, and a customer can walk in. What it cannot
+                  do is take an order here, and saying "in-store only" is the
+                  honest version of that. Rendering its menu as sold out would
+                  say the shelves are empty, which is a different and false
+                  claim.
+                --}}
+                @if (store.ordersOnline)
+                  <span class="store-switch-hours">{{ store.storeHours }}</span>
+                @else
+                  <span class="store-switch-hours">In-store only &middot; {{ store.storePhone }}</span>
+                @endif
+              </a>
+            @endforeach
+          </div>
+        </div>
+      @endif
+
       <a href="/menu" class="btn btn-primary btn-small nav-cta">Order online</a>
     </div>
   </div>

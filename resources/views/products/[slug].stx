@@ -18,7 +18,7 @@
  * sell, so a typo and a retired product both get indexed as real pages and a
  * crawler never learns they are gone.
  */
-const { products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum, stores } = await loadSiteModel()
+const { products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum, stores, selectedStore, selectedStoreSlug } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const requested = String((typeof slug !== 'undefined' && slug) || params?.slug || '')
 const found = products.find(item => item.slug === requested) || null
@@ -52,6 +52,19 @@ const related = [...sameCategory, ...others].slice(0, 4)
 /* A 404 points at the menu; pointing it at some other product would tell a
    crawler this URL is that product. */
 const canonicalPath = found ? `/products/${product.slug}` : '/menu'
+
+/*
+ * The other shops that have it, each with the separator that follows it.
+ * Built here because the template has no way to ask "am I the last one", and
+ * "West LA, and Sawtelle." reads as written English where a joined list with a
+ * trailing comma does not.
+ */
+const withStock = found ? stores.filter(store => store.slug !== selectedStoreSlug && product.stockedAt.includes(store.slug)) : []
+const otherStoresWithStock = withStock.map((store, index) => ({
+  slug: store.slug,
+  shortName: store.shortName,
+  separator: index === withStock.length - 1 ? '.' : (index === withStock.length - 2 ? ' and ' : ', '),
+}))
 
 /*
  * Reviews, summary first.
@@ -321,6 +334,37 @@ async function sendReview(productSlug) {
               <div><dt>Size</dt><dd class="mono">{{ product.unit }}</dd></div>
               <div><dt>Category</dt><dd>{{ product.categoryName }}</dd></div>
             </dl>
+
+            {{--
+              Where this can be collected, before the button rather than after.
+
+              A customer who adds to the bag and only then discovers the shop
+              they picked does not stock it has been made to do work twice.
+              Naming the other shop with a link that switches to it turns a
+              dead end into one click.
+            --}}
+            @if (selectedStore && !selectedStore.ordersOnline)
+              {{--
+                No feed from this shop, so neither "in stock" nor "sold out" is
+                a claim we can make. What is true is that they trade and answer
+                the phone, so that is what it says.
+              --}}
+              <p class="product-stock">{{ selectedStore.shortName }} does not take online orders yet — call {{ selectedStore.storePhone }}, or switch to a shop that does.</p>
+            @elseif (selectedStoreSlug && !product.inStockHere)
+              <p class="product-stock product-stock-out">
+                Sold out at {{ selectedStore.shortName }}.
+                @if (product.alsoAt.length)
+                  In stock at
+                  @foreach (otherStoresWithStock as other)
+                    <a href="/store/{{ other.slug }}/choose?next=/products/{{ product.slug }}">{{ other.shortName }}</a>{{ other.separator }}
+                  @endforeach
+                @endif
+              </p>
+            @elseif (selectedStoreSlug)
+              <p class="product-stock">In stock at {{ selectedStore.shortName }}@if (product.alsoAt.length), and at {{ product.alsoAt.join(', ') }}@endif.</p>
+            @else
+              <p class="product-stock">Pick a shop in the header to see whether it is on the shelf today.</p>
+            @endif
 
             <div class="product-actions">
               <button type="button" class="btn btn-primary" :disabled="bagBusy()" @click="addToBag('{{ product.slug }}')">

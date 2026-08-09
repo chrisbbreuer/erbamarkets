@@ -396,6 +396,75 @@
         .nav-link-mobile { display: none; }
       }
       .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
+
+      /* Which shop the order comes from. Hover on desktop, always-open list on
+         touch — a hover-only menu is unreachable on a phone, and this is the
+         control the whole storefront hangs on. */
+      .store-switch { position: relative; }
+      .store-switch-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.6rem 0.9rem;
+        border: 1px solid var(--faint-strong);
+        border-radius: 999px;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        cursor: default;
+      }
+      .store-switch-label::before {
+        content: '';
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 50%;
+        background: var(--accent, currentColor);
+      }
+      /* Nothing chosen yet: an outline, so it reads as a question rather than
+         a setting that is already correct. */
+      .store-switch-label-none { border-style: dashed; opacity: 0.85; }
+      .store-switch-label-none::before { background: transparent; border: 1px solid currentColor; }
+      .store-switch-menu {
+        position: absolute;
+        top: calc(100% + 0.4rem);
+        right: 0;
+        min-width: 13rem;
+        padding: 0.35rem;
+        border: 1px solid var(--faint-strong);
+        border-radius: 0.75rem;
+        background: var(--surface, #fff);
+        box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.12s ease;
+        z-index: 40;
+      }
+      .store-switch:hover .store-switch-menu,
+      .store-switch:focus-within .store-switch-menu { opacity: 1; visibility: visible; }
+      .store-switch-option {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        padding: 0.55rem 0.7rem;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        text-decoration: none;
+        color: inherit;
+      }
+      .store-switch-option:hover, .store-switch-option:focus-visible { background: var(--faint); }
+      .store-switch-option.is-current { font-weight: 600; }
+      .store-switch-hours { font-size: 0.74rem; opacity: 0.65; }
+
+      @media (hover: none) {
+        .store-switch-menu { position: static; opacity: 1; visibility: visible; box-shadow: none; border: 0; padding: 0; min-width: 0; }
+        .store-switch { display: flex; align-items: center; gap: 0.4rem; }
+        .store-switch-menu { display: flex; gap: 0.25rem; }
+        .store-switch-hours { display: none; }
+      }
+
+      /* Where else a product can be had. Only rendered when the answer is
+         "somewhere else", so it never states the obvious. */
+      .stock-elsewhere { font-size: 0.75rem; opacity: 0.7; }
+      .stock-out { font-size: 0.75rem; opacity: 0.8; font-weight: 600; }
       .bag-button {
         display: inline-flex;
         align-items: center;

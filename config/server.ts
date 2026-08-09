@@ -17,7 +17,10 @@ export default {
    * a static file.
    */
   proxy: {
-    prefixes: [],
+    // The store switcher is a parameterised path, so it needs a prefix rather
+    // than an exact entry. Singular `/store/`; the public location pages are
+    // `/stores/{slug}` and stay with the page router.
+    prefixes: ['/store/'],
     paths: ['/sitemap.xml', '/robots.txt'],
   },
 

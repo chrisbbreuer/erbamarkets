@@ -26,7 +26,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Free delivery across West Los Angeles with no service charge, plus curbside pickup. Hours, payment, timings and coverage.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const facts = [
   {

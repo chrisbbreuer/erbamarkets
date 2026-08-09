@@ -23,7 +23,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Shopping should be experiential, not transactional. The idea behind ERBA, and how two rooms in West Los Angeles are put together.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const chapters = [
   {

@@ -42,7 +42,7 @@ export default defineModel({
 
   belongsTo: ['Category', 'Manufacturer'],
 
-  hasMany: ['Review', 'ProductUnit', 'ProductVariant', 'LicenseKey', 'WaitlistProduct', 'Coupon'],
+  hasMany: ['Review', 'ProductUnit', 'ProductVariant', 'LicenseKey', 'WaitlistProduct', 'Coupon', 'StoreProduct'],
 
   attributes: {
     name: {

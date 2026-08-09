@@ -26,7 +26,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'The terms that apply when you use the ERBA Markets website and order from our West Los Angeles dispensaries.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const updated = 'February 2026'
 </script>

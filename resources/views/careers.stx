@@ -25,7 +25,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Work at ERBA Markets in West Los Angeles. Apply to join the team at our Sawtelle or West LA dispensary.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const positions = [
   'Budtender',

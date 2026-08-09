@@ -74,7 +74,8 @@
   },
   "dependencies": {
     "maplibre-gl": "^6.2.0",
-    "stacks": "^0.70.337"
+    "pickier": "^0.1.49",
+    "stacks": "^0.70.346"
   },
   "workspaces": [
     "storage/framework",

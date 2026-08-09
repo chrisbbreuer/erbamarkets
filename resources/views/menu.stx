@@ -35,10 +35,12 @@ const pageDescription = 'The full ERBA Markets menu: flower, pre-rolls, cartridg
  */
 const brandJson = (name) => JSON.stringify(String(name || ''))
 
-const site = await loadSiteModel()
+const site = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 /* The header and footer partials read these by name. */
 const stores = site.stores
+const selectedStore = site.selectedStore
+const selectedStoreSlug = site.selectedStoreSlug
 const westla = site.westla
 const navCategories = site.navCategories
 const navBrands = site.navBrands
@@ -400,6 +402,24 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
                   <s :if="product.wasPrice">{{ product.wasPrice }}</s>{{ product.price }}
                   <span class="card-unit">/ {{ product.unit }}</span>
                 </p>
+                {{--
+                  Where this can actually be bought.
+
+                  Only rendered when it says something the price line does not.
+                  With no shop chosen the menu is the union of both, so every
+                  card would otherwise carry a location note that means
+                  nothing. Once a shop is chosen, the two cases worth naming
+                  are "we do not have this here" and "here, and also there" —
+                  the second because it tells a customer switching shops that
+                  they will not lose the item.
+                --}}
+                @if (selectedStore && !selectedStore.ordersOnline)
+                  {{-- No feed from this shop, so we cannot claim either way. --}}
+                @elseif (selectedStoreSlug && !product.inStockHere)
+                  <p class="stock-out">Sold out here@if (product.alsoAt.length) &middot; at {{ product.alsoAt.join(', ') }}@endif</p>
+                @elseif (selectedStoreSlug && product.alsoAt.length)
+                  <p class="stock-elsewhere">Also at {{ product.alsoAt.join(', ') }}</p>
+                @endif
               </div>
             </a>
           @endforeach

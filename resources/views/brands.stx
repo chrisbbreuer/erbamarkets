@@ -27,7 +27,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'The cannabis brands stocked at ERBA Markets in West Los Angeles, from flower and pre-rolls to cartridges, edibles and wellness.'
 
-const { stores, sawtelle, westla, products, brands, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, products, brands, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const countsByBrand = products.reduce((acc, product) => {
   if (product.brand)

@@ -37,7 +37,7 @@ const {
   navFeature,
   navProductCount,
   navDeliveryMinimum,
-} = await loadSiteModel()
+} = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 /* Eight for the homepage, not the whole catalogue: /menu owns the full list.
    Already ordered by is_featured, so this is the staff picks that have a

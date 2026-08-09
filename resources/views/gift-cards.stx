@@ -25,7 +25,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Digital gift cards for ERBA Markets, redeemable at both West Los Angeles dispensaries, in store and on delivery. No fees.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const cardStore = 'https://card.birchmountnetwork.com/store/erbamarkets'
 

@@ -26,7 +26,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'How ERBA Markets collects, uses and protects your personal information, and the rights you have over it under California law.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const updated = 'February 2026'
 </script>

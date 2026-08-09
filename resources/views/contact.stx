@@ -24,7 +24,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Call, email or write to ERBA Markets. Store and delivery numbers for both West Los Angeles rooms, and a form for everything else.'
 
-const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const subjects = [
   'An order I have placed',

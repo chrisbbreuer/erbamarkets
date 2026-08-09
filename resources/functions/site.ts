@@ -39,6 +39,7 @@ import { commerce } from '@stacksjs/commerce'
 import Product from '../../app/Models/Product'
 import Special from '../../app/Models/Special'
 import Store from '../../app/Models/Store'
+import StoreProduct from '../../app/Models/StoreProduct'
 import Category from '../../storage/framework/defaults/app/Models/commerce/Category'
 import Customer from '../../storage/framework/defaults/app/Models/commerce/Customer'
 import Manufacturer from '../../storage/framework/defaults/app/Models/commerce/Manufacturer'
@@ -79,6 +80,16 @@ export interface StoreView {
   deliveryMinimum: string
   deliveryMinimumValue: number
   url: string
+  /**
+   * Whether this shop's shelves are known to us.
+   *
+   * Sawtelle trades — the shop is open and the licence is current — but it has
+   * never been set up for online ordering, so no inventory reaches us. That is
+   * not the same as an empty shelf, and the difference matters: rendering its
+   * menu as six hundred sold-out products would be false, and would read as
+   * the shop having nothing rather than as us having no feed.
+   */
+  ordersOnline: boolean
 }
 
 export interface ProductView {
@@ -106,6 +117,19 @@ export interface ProductView {
   /** `(12)` alongside it. Empty when nobody has reviewed it. */
   reviewsLabel: string
   featured: number
+  /**
+   * Slugs of the shops that have this in stock right now.
+   *
+   * A dispensary's two locations hold different inventory, so "in stock" is
+   * only ever a statement about one of them. Carrying the list on every card
+   * is what lets the menu say "sold out here, in stock at Sawtelle" instead of
+   * hiding the product or, worse, selling it from the wrong counter.
+   */
+  stockedAt: string[]
+  /** Whether the shop the customer is currently ordering from has it. */
+  inStockHere: boolean
+  /** Short names of the other shops that do, for the "also at …" line. */
+  alsoAt: string[]
 }
 
 export interface SpecialView {
@@ -127,6 +151,16 @@ export interface SiteModel {
   stores: StoreView[]
   sawtelle: StoreView
   westla: StoreView
+  /**
+   * The shop the customer is ordering from, or `null` before they pick one.
+   *
+   * Null is a state the pages render, not one they guard against: with no shop
+   * chosen the menu is the union of both, which is the right thing to show
+   * someone who has not said where they are.
+   */
+  selectedStore: StoreView | null
+  /** The same thing as a slug, for comparisons in templates. */
+  selectedStoreSlug: string
   categories: { name: string, slug: string, description: string }[]
   products: ProductView[]
   brands: string[]
@@ -176,7 +210,15 @@ function jsonColumn(value: unknown): string[] {
 }
 
 export async function loadStores(): Promise<StoreView[]> {
-  const rows = await Store.where('is_active', true).orderBy('display_order', 'asc').get()
+  const [rows, stocked] = await Promise.all([
+    Store.where('is_active', true).orderBy('display_order', 'asc').get(),
+    StoreProduct.where('is_available', true).get(),
+  ])
+
+  // A shop we have inventory for is a shop that can be ordered from. Derived
+  // rather than configured, so a location becomes orderable the moment its
+  // first import lands and nobody has to remember to flip a flag.
+  const withStock = new Set((stocked as any[]).map(row => row.store_id))
 
   return rows.map((row: any) => ({
     name: row.name,
@@ -204,6 +246,7 @@ export async function loadStores(): Promise<StoreView[]> {
     deliveryMinimum: money(row.delivery_minimum * 100),
     deliveryMinimumValue: Number(row.delivery_minimum),
     url: `/stores/${row.slug}`,
+    ordersOnline: withStock.has(row.id),
   }))
 }
 
@@ -213,16 +256,44 @@ export async function loadStores(): Promise<StoreView[]> {
  * Categories and brands arrive as separate tables keyed by id, so both are
  * indexed once here rather than per product.
  */
-export async function loadCatalog(): Promise<{
+export async function loadCatalog(storeSlug = ''): Promise<{
   categories: SiteModel['categories']
   products: ProductView[]
   brands: string[]
 }> {
-  const [categoryRows, brandRows, productRows] = await Promise.all([
+  const [categoryRows, brandRows, productRows, storeRows, stockRows] = await Promise.all([
     Category.where('is_active', true).orderBy('display_order', 'asc').get(),
     Manufacturer.query().get(),
     Product.where('is_available', true).orderBy('is_featured', 'desc').get(),
+    Store.where('is_active', true).orderBy('display_order', 'asc').get(),
+    StoreProduct.where('is_available', true).get(),
   ])
+
+  /*
+   * Which shops hold each product, and what each charges.
+   *
+   * Two maps rather than a join so the whole menu costs the five queries above
+   * however many products it has. `stock` answers "who has it"; `priced`
+   * answers "what does the shop the customer picked charge", which is a
+   * separate question because tax is levied per storefront and a brand
+   * discount routinely runs at one location and not the other.
+   */
+  const slugByStoreId = new Map(storeRows.map((row: any) => [row.id, row.slug]))
+  const storeShortBySlug = new Map(storeRows.map((row: any) => [row.slug, row.short_name]))
+
+  const stock = new Map<number, string[]>()
+  const priced = new Map<number, any>()
+
+  for (const row of stockRows as any[]) {
+    const slug = slugByStoreId.get(row.store_id)
+    if (!slug)
+      continue
+
+    stock.set(row.product_id, [...(stock.get(row.product_id) ?? []), slug])
+
+    if (slug === storeSlug)
+      priced.set(row.product_id, row)
+  }
 
   const categorySlugById = new Map(categoryRows.map((row: any) => [row.id, row.slug]))
   const categoryNameBySlug = new Map(categoryRows.map((row: any) => [row.slug, row.name]))
@@ -234,8 +305,31 @@ export async function loadCatalog(): Promise<{
     description: row.description,
   }))
 
-  const products: ProductView[] = productRows.map((row: any) => {
+  /*
+   * Once any shop has reported its shelves, the menu is what the shops have.
+   *
+   * `seed:catalog` writes a small hand-built catalog so a fresh checkout has
+   * something to render before `sync:menu` has ever run. Those rows have no
+   * store inventory, and leaving them in alongside the imported menu put
+   * twenty invented products on the page marked "Sold out here" — permanently,
+   * since nothing upstream will ever stock them.
+   *
+   * So: if there is stock data, it decides the menu. If there is none, this is
+   * a fresh install and the seeded rows are all there is.
+   */
+  const inventoryKnown = stockRows.length > 0
+  const listed = inventoryKnown ? productRows.filter((row: any) => stock.has(row.id)) : productRows
+
+  const products: ProductView[] = listed.map((row: any) => {
     const category = categorySlugById.get(row.category_id) || 'flower'
+    const stockedAt = stock.get(row.id) ?? []
+
+    // The selected shop's own price when it has one. Falling back to the
+    // product row is what keeps a card renderable before the first import and
+    // for anyone browsing without having picked a shop yet.
+    const here = priced.get(row.id)
+    const priceCents = here ? here.price : row.price
+    const compareAt = here ? here.compare_at_price : row.compare_at_price
 
     return {
       id: row.id,
@@ -247,10 +341,10 @@ export async function loadCatalog(): Promise<{
       brand: brandNameById.get(row.manufacturer_id) || '',
       brandLine: row.brand_line || '',
       strain: row.strain_type || '',
-      unit: row.unit_size || '',
-      priceCents: row.price,
-      price: money(row.price),
-      wasPrice: row.compare_at_price > 0 ? money(row.compare_at_price) : '',
+      unit: (here?.unit_size || row.unit_size) || '',
+      priceCents,
+      price: money(priceCents),
+      wasPrice: compareAt > 0 ? money(compareAt) : '',
       thc: potency(row.thc_percentage, category),
       // Numeric and unformatted: the menu sorts on this, and sorting has to
       // stay within a category to mean anything anyway.
@@ -270,6 +364,13 @@ export async function loadCatalog(): Promise<{
       ratingLabel: Number(row.rating) > 0 ? Number(row.rating).toFixed(1) : '',
       reviewsLabel: Number(row.review_count) > 0 ? `(${row.review_count})` : '',
       featured: row.is_featured ? 1 : 0,
+      stockedAt,
+      // With no shop chosen the menu is the union of both, so nothing reads as
+      // sold out before the customer has told us where they are.
+      inStockHere: storeSlug ? stockedAt.includes(storeSlug) : stockedAt.length > 0,
+      alsoAt: stockedAt
+        .filter(slug => slug !== storeSlug)
+        .map(slug => storeShortBySlug.get(slug) || slug),
     }
   })
 
@@ -308,8 +409,50 @@ export async function loadSpecials(stores: StoreView[]): Promise<SpecialView[]> 
  * Nav counts are real: a category with nothing in stock is dropped rather than
  * rendered as a dead link with a zero beside it.
  */
-export async function loadSiteModel(): Promise<SiteModel> {
-  const [stores, catalog] = await Promise.all([loadStores(), loadCatalog()])
+/** Cookie the chosen shop is remembered in. */
+export const STORE_COOKIE = 'erba_store'
+
+/**
+ * What a template knows about the request.
+ *
+ * stx hands `<script server>` a `cookies` and a `query` object; it does not
+ * hand it the `Request`, and the router's `request` proxy is empty during a
+ * page render because pages are rendered by stx's server rather than through
+ * the router. So the two values are passed in rather than reached for, which
+ * also makes this callable from a test without a server.
+ */
+export interface RequestScope {
+  cookies?: Record<string, string>
+  query?: Record<string, string>
+}
+
+/**
+ * Which shop the customer is ordering from.
+ *
+ * A cookie rather than the URL, so the choice survives every link on the site —
+ * someone who picked Sawtelle on the menu should still be on Sawtelle after
+ * reading the FAQ. `?store=` wins when present, which is what makes a shared
+ * link land on the shop the sender meant.
+ *
+ * Returns `''` when nothing has been chosen. That is a real state, not a
+ * missing one: until the customer says where they are, the menu shows
+ * everything both shops carry and nothing is described as sold out.
+ */
+export function resolveStoreSlug(stores: StoreView[], scope: RequestScope = {}): string {
+  const known = new Set(stores.map(store => store.slug))
+
+  const asked = String(scope.query?.store ?? '')
+  if (known.has(asked))
+    return asked
+
+  const chosen = String(scope.cookies?.[STORE_COOKIE] ?? '')
+  return known.has(chosen) ? chosen : ''
+}
+
+export async function loadSiteModel(scope: RequestScope = {}): Promise<SiteModel> {
+  const stores = await loadStores()
+  const selectedStoreSlug = resolveStoreSlug(stores, scope)
+  const catalog = await loadCatalog(selectedStoreSlug)
   const { categories, products, brands } = catalog
   const specials = await loadSpecials(stores)
 
@@ -348,10 +491,14 @@ export async function loadSiteModel(): Promise<SiteModel> {
   if (!sawtelle || !westla)
     throw new Error('No active stores. Run `./buddy seed:catalog` — every page reads store hours, phone numbers and license numbers.')
 
+  const selectedStore = stores.find(store => store.slug === selectedStoreSlug) ?? null
+
   return {
     stores,
     sawtelle,
     westla,
+    selectedStore,
+    selectedStoreSlug,
     categories,
     products,
     brands,

@@ -37,6 +37,8 @@ export default defineModel({
     },
   },
 
+  hasMany: ['StoreProduct'],
+
   attributes: {
     name: {
       order: 1,

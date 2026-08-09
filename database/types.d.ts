@@ -967,6 +967,23 @@ declare module '@stacksjs/database' {
       store_slug: unknown
       is_active: unknown
     }
+    store_products: {
+      // columns
+      id: number
+      uuid: string
+      created_at: string
+      updated_at: string | null
+      price: unknown
+      compare_at_price: unknown
+      unit_size: unknown
+      is_available: unknown
+      stock_count: unknown
+      fulfillment: unknown
+      source_id: unknown
+      synced_at: unknown
+      store_id: number
+      product_id: number
+    }
     stores: {
       // columns
       id: number

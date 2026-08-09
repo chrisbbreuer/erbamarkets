@@ -25,7 +25,7 @@ import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'A deal every day of the week at ERBA Markets, from Tank Tuesday to Fresh Fruit Cup Friday. Free delivery over $30 across West LA.'
 
-const site = await loadSiteModel()
+const site = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 /* The header and footer partials read these by name. */
 const stores = site.stores

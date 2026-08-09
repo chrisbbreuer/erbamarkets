@@ -25,7 +25,7 @@
  */
 import { loadSiteModel } from '../../functions/site'
 
-const { stores, sawtelle, westla, products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel()
+const { stores, sawtelle, westla, products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
 
 const requested = String((typeof slug !== 'undefined' && slug) || params?.slug || '')
 const foundStore = stores.find(row => row.slug === requested) || null
