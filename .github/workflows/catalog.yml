@@ -1,0 +1,98 @@
+name: Catalog
+
+# Bring the shop's live inventory into the deployed database.
+#
+# `buddy deploy` ships code and nothing else — no migrations, no seeders, no
+# import — and it installs no scheduler, so the nightly `menu:sync` declared in
+# app/Scheduler.ts has never run in production. The result was a deployed site
+# whose code was current and whose menu was the twenty hand-seeded products
+# from the day it first went up.
+#
+# This is that missing half. It runs on the box, because the database is a
+# SQLite file there and nothing off the machine can reach it.
+on:
+  # Nightly, after close and before the shops open. The same 04:00 Los Angeles
+  # the scheduler asks for, expressed in UTC because cron here has no timezone.
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: What to do on the box
+        type: choice
+        default: inspect
+        options:
+          - inspect
+          - sync
+          - full
+
+# One at a time. Two imports writing the same rows would race, and the loser
+# would leave half a menu behind.
+concurrency:
+  group: catalog-erbamarkets
+  cancel-in-progress: false
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Trust the deploy target
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # Where the release actually lives is not something to guess at: this is a
+      # shared box, and erbamarkets is a tenant on it rather than its owner.
+      # `inspect` reports the layout and changes nothing, so the paths below can
+      # be confirmed before anything writes.
+      - name: Find the release
+        id: find
+        run: |
+          ssh -o StrictHostKeyChecking=yes root@${{ secrets.DEPLOY_HOST }} '
+            set -e
+            echo "--- candidate release directories ---"
+            ls -d /var/www/*erbamarkets* /opt/*erbamarkets* /srv/*erbamarkets* 2>/dev/null || true
+            find /var/www /opt /srv -maxdepth 3 -name "buddy" -type f 2>/dev/null | head -10
+            echo "--- systemd units ---"
+            systemctl list-units --all --no-legend --plain 2>/dev/null | grep -i erbamarkets | head -10 || true
+            echo "--- unit working directories ---"
+            for u in $(systemctl list-unit-files --no-legend --plain 2>/dev/null | grep -io "^[a-z0-9@._-]*erbamarkets[a-z0-9@._-]*" | head -5); do
+              echo "$u -> $(systemctl show -p WorkingDirectory --value "$u" 2>/dev/null)"
+            done
+          '
+
+      - name: Bring the catalog up to date
+        if: inputs.mode == 'sync' || inputs.mode == 'full' || github.event_name == 'schedule'
+        run: |
+          # `full` also applies migrations and seeds the rows an operator owns
+          # afterwards (stores, specials, tax rates). `sync` is the nightly
+          # case: the menu changes, the shop's own settings do not.
+          FULL='${{ inputs.mode }}'
+          ssh -o StrictHostKeyChecking=yes root@${{ secrets.DEPLOY_HOST }} "
+            set -euo pipefail
+            cd '${{ vars.RELEASE_PATH || '/var/www/erbamarkets' }}'
+            export PATH=\"/root/.bun/bin:\$PATH\"
+            if [ \"\$FULL\" = 'full' ]; then
+              ./buddy migrate
+              ./buddy seed:catalog
+            fi
+            ./buddy menu:sync
+            ./buddy menu:index
+          "
+
+      # A sync that imported nothing is a failure that looks like a success, so
+      # the count is checked rather than the exit code.
+      - name: Check the menu is really there
+        if: inputs.mode == 'sync' || inputs.mode == 'full' || github.event_name == 'schedule'
+        run: |
+          cards=$(curl -s -m 60 https://erba.stacksjs.com/menu | grep -oc 'class="card"' || echo 0)
+          echo "products on the live menu: ${cards}"
+          if [ "$cards" -lt 100 ]; then
+            echo "::error::the live menu shows ${cards} products; the import did not land"
+            exit 1
+          fi
