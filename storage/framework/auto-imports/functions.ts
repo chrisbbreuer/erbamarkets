@@ -3,7 +3,7 @@
 export { increment, decrement, reset, count } from '../../../resources/functions/counter'
 export { loadStores, loadCatalog, loadSpecials, loadSiteModel, loadProductReviews, money, telHref, potency, resolveStoreSlug, emptyProductReviews, STORE_COOKIE } from '../../../resources/functions/site'
 export type { StoreView, ProductView, SpecialView, SiteModel, RequestScope, ReviewView, ProductReviews } from '../../../resources/functions/site'
-export { looksLikeMmic, cardIsValidOn, totalsFor, blendedRate } from '../../../resources/functions/tax'
+export { activeRates, totalsFor, blendedRate, looksLikeMmic, cardIsValidOn, totalsFrom } from '../../../resources/functions/tax'
 export type { MmicCard, Totals } from '../../../resources/functions/tax'
 export { resolveApiBaseUrl } from '../defaults/functions/api-url'
 export { fetchDashboardData } from '../defaults/functions/data'

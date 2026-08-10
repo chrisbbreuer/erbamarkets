@@ -1,11 +1,19 @@
-import tax from '../../config/tax'
+import { commerce } from '@stacksjs/commerce'
+import taxConfig from '../../config/tax'
 
 /**
  * What a customer owes, and how much of it is tax.
  *
+ * The rates come from the `tax_rates` table, which is what the dashboard edits
+ * under Commerce → Taxes. They were constants in `config/tax.ts` until the
+ * dashboard could hold them; a rate change is a business decision on a
+ * deadline the state sets, and making it wait for a deploy is how a shop ends
+ * up charging last quarter's number. `config/tax.ts` seeds the table on a
+ * fresh install and is not read again.
+ *
  * Split out of the checkout route so the arithmetic can be asserted on its
- * own. It decides what people are charged, and a rounding error here is a
- * discrepancy in the shop's books rather than a visual bug.
+ * own. It decides what people are charged, and an error here is a discrepancy
+ * in the shop's books rather than a visual bug.
  */
 
 /** A card, as the customer entered it. */
@@ -17,15 +25,14 @@ export interface MmicCard {
 
 export interface Totals {
   subtotal: number
-  excise: number
-  salesTax: number
-  localTax: number
   /** Every tax component together — what the receipt calls "Tax". */
   tax: number
   total: number
   /** Sales tax not charged because of a valid MMIC, in cents. */
   exempted: number
   isMedical: boolean
+  /** Each component, charged or lifted, for the receipt. */
+  components: { code: string, name: string, amount: number, exempted: boolean }[]
 }
 
 /**
@@ -65,33 +72,61 @@ export function cardIsValidOn(card: MmicCard, when: Date): boolean {
 }
 
 /**
- * Totals for a bag.
+ * The rates to charge, as rows.
  *
- * A valid MMIC removes the sales-tax component and nothing else: the excise
- * tax applies to medicinal cannabis, and Los Angeles levies its business tax
- * on medicinal receipts too. Passing an invalid or expired card is not an
- * error — it is charged as adult use, which is what the counter would do.
+ * Falls back to the seeds when the table is empty, which is a fresh checkout
+ * before `seed:catalog` has run. Charging nothing would be worse than charging
+ * the documented default: a $0 tax line looks deliberate.
  */
-export function totalsFor(subtotal: number, card?: MmicCard | null, when: Date = new Date()): Totals {
+export async function activeRates(): Promise<any[]> {
+  const rows = await commerce.tax.activeTaxRates()
+
+  if (rows.length)
+    return rows
+
+  return taxConfig.seedRates.map((seed, index) => ({
+    id: -(index + 1),
+    code: seed.code,
+    name: seed.name,
+    rate: seed.rate,
+    exemptible: seed.exemptible,
+  }))
+}
+
+/**
+ * Totals for a bag, given the rates already in hand.
+ *
+ * Synchronous and rate-injected so a checkout pricing several bags loads once,
+ * and so the arithmetic can be asserted without a database.
+ *
+ * A valid MMIC lifts the components marked exemptible and nothing else — the
+ * excise tax applies to medicinal cannabis, and Los Angeles levies its
+ * business tax on medicinal receipts. Passing an invalid or expired card is
+ * not an error: it is charged as adult use, which is what the counter would do
+ * rather than refusing the sale.
+ */
+export function totalsFrom(subtotal: number, rates: any[], card?: MmicCard | null, when: Date = new Date()): Totals {
   const isMedical = Boolean(card && cardIsValidOn(card, when))
-
-  const excise = Math.round(subtotal * tax.exciseRate)
-  const localTax = Math.round(subtotal * tax.localRate)
-  const fullSalesTax = Math.round(subtotal * tax.salesRate)
-  const salesTax = isMedical ? 0 : fullSalesTax
-
-  const total = subtotal + excise + salesTax + localTax
+  const breakdown = commerce.tax.breakdownFor(subtotal, rates, { exempt: isMedical })
 
   return {
-    subtotal,
-    excise,
-    salesTax,
-    localTax,
-    tax: excise + salesTax + localTax,
-    total,
-    exempted: isMedical ? fullSalesTax : 0,
+    subtotal: breakdown.taxable,
+    tax: breakdown.tax,
+    total: breakdown.taxable + breakdown.tax,
+    exempted: breakdown.exempted,
     isMedical,
+    components: breakdown.components.map(component => ({
+      code: component.code,
+      name: component.name,
+      amount: component.amount,
+      exempted: component.exempted,
+    })),
   }
+}
+
+/** Totals for a bag, loading the current rates. */
+export async function totalsFor(subtotal: number, card?: MmicCard | null, when: Date = new Date()): Promise<Totals> {
+  return totalsFrom(subtotal, await activeRates(), card, when)
 }
 
 /**
@@ -102,6 +137,8 @@ export function totalsFor(subtotal: number, card?: MmicCard | null, when: Date =
  * applies to the bag at checkout, and a line written while the customer is
  * still shopping cannot know whether a card is coming.
  */
-export function blendedRate(): number {
-  return tax.exciseRate + tax.salesRate + tax.localRate
+export async function blendedRate(): Promise<number> {
+  const rates = await activeRates()
+
+  return rates.reduce((total, rate) => total + (Number(rate.rate) || 0) / 100, 0)
 }

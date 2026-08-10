@@ -1094,6 +1094,8 @@ declare module '@stacksjs/database' {
       region: unknown
       status: unknown
       is_default: unknown
+      code: unknown
+      exemptible: unknown
     }
     team_invitations: {
       // columns

@@ -10,6 +10,8 @@ import Manufacturer from '../../storage/framework/defaults/app/Models/commerce/M
 import Product from '../Models/Product'
 import Special from '../Models/Special'
 import Store from '../Models/Store'
+import TaxRate from '../../storage/framework/defaults/app/Models/commerce/TaxRate'
+import taxConfig from '../../config/tax'
 
 /**
  * Loads the real storefront: two dispensaries, the weekday deal calendar, the
@@ -544,6 +546,33 @@ export default function (cli: CLI): void {
         )
         log.success(`Specials: ${specialCount}`)
 
+        /*
+         * The tax components, written once and then owned by the dashboard.
+         *
+         * Keyed on `code`, so a rerun does not overwrite a rate somebody
+         * changed under Commerce → Taxes. That matters more than it looks: the
+         * state moves the excise rate on its own schedule, and a seeder that
+         * quietly restored last quarter's number on the next deploy would be
+         * hard to notice and expensive to have missed.
+         */
+        const taxCount = await upsertAll(
+          TaxRate,
+          taxConfig.seedRates.map(seed => ({
+            code: seed.code,
+            name: seed.name,
+            rate: seed.rate,
+            exemptible: seed.exemptible,
+            type: 'Cannabis',
+            country: 'United States',
+            region: 'North America',
+            status: 'active',
+            isDefault: false,
+          })),
+          'code',
+          { skipExisting: true },
+        )
+        log.success(`Tax rates: ${taxCount}`)
+
         const categoryCount = await upsertAll(Category, CATEGORIES.map(category => ({ ...category, isActive: true })), 'slug')
         log.success(`Categories: ${categoryCount}`)
 
@@ -606,9 +635,22 @@ async function upsertAll(
   model: any,
   rows: Record<string, any>[],
   key: string,
+  /**
+   * `skipExisting` leaves a row alone once it exists.
+   *
+   * The default is to overwrite, which is right for content this file owns —
+   * store hours, deal copy, category names. It is wrong for anything an
+   * operator can edit afterwards: rewriting a tax rate somebody changed in the
+   * dashboard would quietly restore last quarter's number on the next deploy,
+   * and nobody would see it until an accountant did.
+   */
+  options: { skipExisting?: boolean } = {},
 ): Promise<number> {
   for (const row of rows) {
     const existing = await model.where(key, row[key]).first()
+
+    if (existing && options.skipExisting)
+      continue
 
     if (existing)
       await model.where(key, row[key]).update(row)

@@ -138,9 +138,25 @@ const bagOpen = state(false)
 const bagCount = state(0)
 const bagBusy = state(false)
 const added = state(false)
+const bagNotice = state('')
 
 const bagToken = useLocalStorage('erba-bag-token', '')
 const csrf = useCookie('X-CSRF-Token')
+
+/**
+ * The id this browser's bag is kept under, minted on first use.
+ *
+ * The server requires one and does not issue it — a bag has to be identifiable
+ * before there is anything in it. The home page minted one and this page did
+ * not, so the very first thing a customer did on a product page was send an
+ * empty token, get a 400 back, and watch the button do nothing.
+ */
+function ensureToken() {
+  if (!bagToken())
+    bagToken.set(`bag_${crypto.randomUUID()}`)
+
+  return bagToken()
+}
 
 /**
  * Adds this product to the same server-side cart the menu writes to, so the
@@ -151,24 +167,34 @@ async function addToBag(productSlug) {
     return
 
   bagBusy.set(true)
+  bagNotice.set('')
 
   try {
     const res = await fetch('/api/bag', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() || '' },
-      body: JSON.stringify({ token: bagToken() || '', productSlug, quantity: 1 }),
+      body: JSON.stringify({ token: ensureToken(), productSlug, quantity: 1 }),
     })
 
-    if (!res.ok)
-      return
+    const payload = await res.json().catch(() => null)
 
-    const payload = await res.json()
+    // Say why. A button that silently does nothing is indistinguishable from a
+    // broken one, and the reasons here are all things the customer can act on:
+    // sold out at this shop, or a shop that cannot take orders online at all.
+    if (!res.ok) {
+      bagNotice.set(payload?.message || 'That did not go through. Try again in a moment.')
+      return
+    }
+
     if (payload?.token)
       bagToken.set(payload.token)
     if (typeof payload?.count === 'number')
       bagCount.set(payload.count)
 
     added.set(true)
+  }
+  catch {
+    bagNotice.set('That did not go through. Try again in a moment.')
   }
   finally {
     bagBusy.set(false)
@@ -373,6 +399,8 @@ async function sendReview(productSlug) {
               </button>
               <a href="/menu" class="btn btn-ghost">Back to the menu</a>
             </div>
+
+            <p class="product-stock product-stock-out" :if="bagNotice()">{{ bagNotice() }}</p>
 
             <p class="product-note">Free delivery over {{ navDeliveryMinimum }} across West LA, or collect from either room.</p>
           </div>

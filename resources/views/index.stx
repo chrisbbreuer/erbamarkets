@@ -242,6 +242,25 @@ async function addToBag(slug) {
     bagOpen.set(true)
 }
 
+/**
+ * Set a line's quantity, in place.
+ *
+ * Goes straight to the API and swaps the drawer's state from the response —
+ * no navigation, no reload, and the totals come back from the server rather
+ * than being recomputed in the browser, so the number the customer reads is
+ * the number they will be charged.
+ */
+async function setQuantity(slug, quantity) {
+  if (bagBusy())
+    return
+
+  const next = Math.max(0, Math.min(12, quantity))
+  const result = await callBag('/api/bag/quantity', { productSlug: slug, quantity: next })
+
+  if (result)
+    applyBag(result)
+}
+
 async function removeFromBag(slug) {
   bagNotice.set('')
   applyBag(await callBag('/api/bag/remove', { productSlug: slug }))
@@ -595,8 +614,13 @@ onMount(() => {
           <img :src="item.image" :alt="item.name" width="64" height="80">
           <div>
             <p class="line-name">{{ item.name }}</p>
-            <p class="line-meta mono">{{ item.quantity }} &times; {{ dollars(item.unitPrice) }}</p>
-            <button type="button" class="line-remove" @click="removeFromBag(item.slug)">Remove</button>
+            <p class="line-meta mono">{{ dollars(item.unitPrice) }} each</p>
+            <div class="line-qty">
+              <button type="button" :disabled="bagBusy()" :aria-label="'One fewer ' + item.name" @click="setQuantity(item.slug, item.quantity - 1)">&minus;</button>
+              <span class="mono" aria-live="polite">{{ item.quantity }}</span>
+              <button type="button" :disabled="bagBusy() || item.quantity >= 12" :aria-label="'One more ' + item.name" @click="setQuantity(item.slug, item.quantity + 1)">+</button>
+              <button type="button" class="line-remove" @click="removeFromBag(item.slug)">Remove</button>
+            </div>
           </div>
           <p class="mono">{{ dollars(item.linePrice) }}</p>
         </div>

@@ -652,7 +652,54 @@
       .product-specs dd { margin: 0; font-size: 0.95rem; }
       .product-specs .cap { text-transform: capitalize; }
 
-      .product-actions { margin-top: 2.25rem; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+      /*
+       * Where this product can be had. Sits between the spec list and the
+       * buttons, and needs air on both sides — flush against the last spec row
+       * it reads as another spec, which is how it shipped.
+       */
+      .product-stock {
+        margin: 1.5rem 0 0;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--faint);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      .product-stock-out { color: var(--ink); font-weight: 500; }
+      .product-stock a { color: inherit; text-underline-offset: 0.2em; }
+
+      .product-actions { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+      /* The bag's quantity stepper. Buttons, not a number input: a stepper on a
+         phone should be two large targets, and a numeric keypad for a value
+         between one and twelve is more work than it saves. */
+      .line-qty { margin-top: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
+      .line-qty button {
+        min-width: 1.9rem;
+        height: 1.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--faint-strong);
+        border-radius: 0.4rem;
+        background: transparent;
+        color: inherit;
+        font-size: 0.95rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .line-qty button:disabled { opacity: 0.4; cursor: not-allowed; }
+      .line-qty button:hover:not(:disabled) { background: var(--faint); }
+      .line-qty .line-remove {
+        min-width: 0;
+        margin-left: 0.35rem;
+        padding: 0 0.2rem;
+        border: 0;
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+      }
       .product-note { margin-top: 1.5rem; font-size: 0.8rem; color: var(--muted); }
 
       .section.product-related-section { padding-top: clamp(3.5rem, 7vw, 5.5rem); }
@@ -976,7 +1023,20 @@
        * which a grid of cards makes genuinely hard. Numbers are right-aligned
        * and tabular so the decimal points line up.
        */
-      .menu-table-wrap { overflow-x: auto; border: 1px solid var(--faint); }
+      /*
+       * No `overflow-x` here on purpose.
+       *
+       * `overflow-x: auto` computes `overflow-y` to `auto` as well, which makes
+       * this a scroll container — and a `position: sticky` header inside one
+       * sticks to the container rather than the viewport. With `top: 72px` the
+       * head floated seventy-two pixels down and sat on top of the first rows.
+       *
+       * The horizontal scroll is only needed where the table is wider than the
+       * screen, so it is applied there and nowhere else, which leaves the head
+       * sticking to the viewport as intended on a desktop.
+       */
+      .menu-table-wrap { border: 1px solid var(--faint); }
+
       .menu-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
       .menu-table caption { text-align: left; }
       .menu-table thead th {
@@ -995,6 +1055,20 @@
         text-align: left;
         white-space: nowrap;
       }
+
+      /*
+       * Narrow screens need the horizontal scroll, and `overflow-x` makes the
+       * wrapper a scroll container in both axes — so the sticky head anchors to
+       * the wrapper rather than the viewport, and a 72px offset drops it on top
+       * of the first rows. Zero keeps it at the top of the table where it
+       * belongs. After the rule above, because the specificity is identical and
+       * source order is what decides.
+       */
+      @media (max-width: 60rem) {
+        .menu-table-wrap { overflow-x: auto; }
+        .menu-table thead th { top: 0; }
+      }
+
       .menu-table tbody th, .menu-table tbody td {
         padding: 0.95rem 1.1rem;
         border-bottom: 1px solid var(--faint);

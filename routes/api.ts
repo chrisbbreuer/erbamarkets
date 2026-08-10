@@ -32,7 +32,10 @@ import Subscriber from '../storage/framework/defaults/app/Models/Subscriber'
 const DELIVERY_MINIMUM_CENTS = 3000
 
 /** The adult-use rate, for the per-line figure the commerce schema stores. */
-const BLENDED_TAX_RATE = blendedRate()
+/** Adult-use blend for the per-line figure the commerce schema stores. */
+async function blendedTaxRate(): Promise<number> {
+  return blendedRate()
+}
 
 /**
  * How far a van goes. Both rooms are on the Westside and the delivery FAQ
@@ -113,8 +116,8 @@ route.post('/bag', async (request: any) => {
       // The line's own tax, priced as adult use. A medical exemption applies
       // to the bag at checkout, once a card has been offered — a line written
       // while someone is still shopping cannot know.
-      taxRate: BLENDED_TAX_RATE,
-      taxAmount: taxFor(quantity * product.price).tax,
+      taxRate: await blendedTaxRate(),
+      taxAmount: (await taxFor(quantity * product.price)).tax,
       discountPercentage: 0,
       discountAmount: 0,
       productName: product.name,
@@ -139,6 +142,38 @@ route.post('/bag/remove', async (request: any) => {
   await CartItem.where('cart_id', cart.id)
     .where('product_sku', String(request.input('productSlug', '')))
     .delete()
+
+  return response.json(await bagSummary(cart.id))
+})
+
+/**
+ * Set a line's quantity outright.
+ *
+ * `/bag` adds to what is there, which is the right verb for "add to bag" and
+ * the wrong one for a stepper: a customer changing 3 to 2 is stating a number,
+ * not asking for -1 more. Sending zero removes the line, so the stepper's
+ * bottom edge and the Remove button end in the same place.
+ */
+route.post('/bag/quantity', async (request: any) => {
+  const token = cartToken(request)
+  if (!token)
+    return response.badRequest('A bag token is required.')
+
+  const cart = await Cart.where('session_token', token).where('status', 'active').first()
+  if (!cart)
+    return response.json(emptyBag())
+
+  const slug = String(request.input('productSlug', '')).trim()
+  const quantity = Math.max(0, Math.min(12, Number(request.input('quantity', 1)) || 0))
+  const line = await CartItem.where('cart_id', cart.id).where('product_sku', slug).first()
+
+  if (!line)
+    return response.json(await bagSummary(cart.id))
+
+  if (quantity === 0)
+    await CartItem.where('id', line.id).delete()
+  else
+    await CartItem.where('id', line.id).update({ quantity, totalPrice: quantity * line.unit_price })
 
   return response.json(await bagSummary(cart.id))
 })
@@ -182,7 +217,7 @@ route.post('/orders', async (request: any) => {
   const mmicExpiresAt = String(request.input('mmicExpiresAt', '')).trim()
   const card = mmicNumber ? { number: mmicNumber, expiresAt: mmicExpiresAt } : null
 
-  const totals = taxFor(subtotalOf(items), card)
+  const totals = await taxFor(subtotalOf(items), card)
 
   if (fulfillment === 'delivery' && totals.subtotal < DELIVERY_MINIMUM_CENTS)
     return response.badRequest('Delivery orders start at $30. Add a little more, or switch to pickup.')
@@ -622,8 +657,8 @@ function subtotalOf(items: any[]): number {
  * someone is still shopping, so quoting the medical total here would show a
  * number the customer has not yet qualified for.
  */
-function bagTotals(items: any[]): { count: number, subtotal: number, tax: number, total: number } {
-  const totals = taxFor(subtotalOf(items))
+async function bagTotals(items: any[]): Promise<{ count: number, subtotal: number, tax: number, total: number }> {
+  const totals = await taxFor(subtotalOf(items))
 
   return {
     count: items.reduce((sum, item) => sum + item.quantity, 0),
@@ -636,7 +671,7 @@ function bagTotals(items: any[]): { count: number, subtotal: number, tax: number
 /** Recomputes the cart's stored totals, then returns what the drawer renders. */
 async function bagSummary(cartId: number): Promise<Record<string, unknown>> {
   const items = await CartItem.where('cart_id', cartId).get()
-  const totals = bagTotals(items)
+  const totals = await bagTotals(items)
 
   await Cart.where('id', cartId).update({
     totalItems: totals.count,

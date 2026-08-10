@@ -1,6 +1,20 @@
 /**
  * **Cannabis Tax Configuration**
  *
+ * The rates a shop *starts* with, and the one setting that is not a rate.
+ *
+ * These are seeds, not the source of truth. `./buddy seed:catalog` writes them
+ * into the `tax_rates` table on a fresh install, and from then on the rates
+ * live in the dashboard under Commerce → Taxes, where whoever is responsible
+ * for them can change one without a deploy. A rate change is a business
+ * decision on a deadline set by the state; making it wait for an engineer is
+ * how a shop ends up charging last quarter's number.
+ *
+ * Editing this file after the first seed changes nothing. Change the rate in
+ * the dashboard.
+ *
+ * ---
+ *
  * What a California dispensary collects, split into the parts that behave
  * differently — because one of them does not apply to everybody.
  *
@@ -30,28 +44,37 @@
  */
 export default {
   /**
-   * State cannabis excise tax.
+   * The components, as they are first written into `tax_rates`.
    *
-   * Charged on every retail sale of cannabis, medicinal included. An MMIC does
-   * not exempt a patient from it.
+   * `code` is what application code matches on, and it must not change once
+   * orders reference it. `exemptible` marks the component a valid medical card
+   * lifts — only the sales tax. Excise applies to medicinal cannabis, and Los
+   * Angeles levies its business tax on medicinal receipts, so exempting either
+   * would be the shop under-collecting tax it owes.
    */
-  exciseRate: 0.15,
-
-  /**
-   * State and district sales and use tax.
-   *
-   * The part an MMIC exempts. Dropping it is the whole mechanical difference
-   * between a medical and an adult-use order.
-   */
-  salesRate: 0.095,
-
-  /**
-   * Local cannabis business tax, passed through at the counter.
-   *
-   * Los Angeles levies this on gross receipts and it applies to medicinal
-   * sales as well, so it stays for MMIC holders.
-   */
-  localRate: 0.0275,
+  seedRates: [
+    {
+      code: 'excise',
+      name: 'Cannabis excise tax',
+      rate: 15,
+      exemptible: false,
+      note: 'State excise. Charged on medicinal cannabis too.',
+    },
+    {
+      code: 'sales',
+      name: 'State and district sales tax',
+      rate: 9.5,
+      exemptible: true,
+      note: 'The component a valid MMIC removes (Revenue & Taxation Code §34011).',
+    },
+    {
+      code: 'local',
+      name: 'Los Angeles cannabis business tax',
+      rate: 2.75,
+      exemptible: false,
+      note: 'Levied on gross receipts, medicinal included.',
+    },
+  ],
 
   /**
    * How long a card is trusted after checkout without being re-entered.
@@ -59,6 +82,8 @@ export default {
    * An MMIC is valid for a year and the county can revoke one sooner, so a
    * stored card is a convenience, not a credential. Re-asked for after this
    * many days regardless of the date printed on it.
+   *
+   * Not a rate, so it stays here rather than in the dashboard's tax table.
    */
   mmicReverifyDays: 30,
 }

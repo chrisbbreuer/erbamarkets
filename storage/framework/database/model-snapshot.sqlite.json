@@ -8285,6 +8285,25 @@
             "isUnique": true,
             "isNullable": true,
             "hasDefault": false
+          },
+          {
+            "name": "code",
+            "type": "string",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": "",
+            "maxLength": 64
+          },
+          {
+            "name": "exemptible",
+            "type": "boolean",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": false
           }
         ],
         "indexes": [
@@ -10034,7 +10053,7 @@
       }
     ]
   },
-  "hash": "e70d7ca6b1347ceb48b660e438073e74a5ff872c60fd76522106df0d688d56cc",
+  "hash": "2799f95ec5f1d0c6b336a8baa784ea67b9bcf9c1b17fd75982cc3dd5b3f86b77",
   "dialect": "sqlite",
-  "updatedAt": "2026-08-10T00:54:25.776Z"
+  "updatedAt": "2026-08-10T19:45:17.863Z"
 }

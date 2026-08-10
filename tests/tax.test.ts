@@ -10,9 +10,26 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { cardIsValidOn, looksLikeMmic, totalsFor } from '../resources/functions/tax'
+import { cardIsValidOn, looksLikeMmic, totalsFrom } from '../resources/functions/tax'
 
 const DAY_OF_SALE = new Date('2026-06-15T12:00:00Z')
+
+/*
+ * The rates as the dashboard holds them. Injected rather than loaded so the
+ * arithmetic is asserted against a known set — a test that reads whatever the
+ * database happens to contain proves nothing about the sums.
+ */
+const RATES = [
+  { id: 1, code: 'excise', name: 'Cannabis excise tax', rate: 15, exemptible: false },
+  { id: 2, code: 'sales', name: 'State and district sales tax', rate: 9.5, exemptible: true },
+  { id: 3, code: 'local', name: 'Los Angeles cannabis business tax', rate: 2.75, exemptible: false },
+]
+
+const totalsFor = (subtotal: number, card?: any, when?: Date) => totalsFrom(subtotal, RATES, card, when)
+
+/** What one component came to, by code — the receipt's own view of the bill. */
+const part = (totals: ReturnType<typeof totalsFor>, code: string): number =>
+  totals.components.find(component => component.code === code)?.amount ?? -1
 const valid = { number: 'A12345678', expiresAt: '2026-12-31' }
 const lapsed = { number: 'A12345678', expiresAt: '2026-01-31' }
 
@@ -20,9 +37,9 @@ describe('adult use', () => {
   test('charges every component', () => {
     const t = totalsFor(10000, null, DAY_OF_SALE)
 
-    expect(t.excise).toBe(1500)
-    expect(t.salesTax).toBe(950)
-    expect(t.localTax).toBe(275)
+    expect(part(t, 'excise')).toBe(1500)
+    expect(part(t, 'sales')).toBe(950)
+    expect(part(t, 'local')).toBe(275)
     expect(t.tax).toBe(2725)
     expect(t.total).toBe(12725)
   })
@@ -44,11 +61,11 @@ describe('a valid MMIC', () => {
   test('drops sales tax and only sales tax', () => {
     const t = totalsFor(10000, valid, DAY_OF_SALE)
 
-    expect(t.salesTax).toBe(0)
+    expect(part(t, 'sales')).toBe(0)
     // Both of these still apply to medicine. Exempting them would be the shop
     // under-collecting tax it owes the state and the city.
-    expect(t.excise).toBe(1500)
-    expect(t.localTax).toBe(275)
+    expect(part(t, 'excise')).toBe(1500)
+    expect(part(t, 'local')).toBe(275)
   })
 
   test('records what was not charged', () => {
@@ -72,12 +89,12 @@ describe('a card that does not qualify', () => {
     const t = totalsFor(10000, lapsed, DAY_OF_SALE)
 
     expect(t.isMedical).toBe(false)
-    expect(t.salesTax).toBe(950)
+    expect(part(t, 'sales')).toBe(950)
   })
 
   test('is not an error — it is what the counter would do', () => {
     expect(() => totalsFor(10000, { number: 'nope!', expiresAt: 'never' }, DAY_OF_SALE)).not.toThrow()
-    expect(totalsFor(10000, { number: 'nope!', expiresAt: 'never' }, DAY_OF_SALE).salesTax).toBe(950)
+    expect(part(totalsFor(10000, { number: 'nope!', expiresAt: 'never' }, DAY_OF_SALE), 'sales')).toBe(950)
   })
 
   test('a card is good through the whole of its final day', () => {
@@ -118,13 +135,13 @@ describe('rounding', () => {
     // Fractional cents reconcile to a discrepancy in the shop's books.
     const t = totalsFor(3333, null, DAY_OF_SALE)
 
-    for (const amount of [t.excise, t.salesTax, t.localTax, t.tax, t.total])
+    for (const amount of [...t.components.map(c => c.amount), t.tax, t.total])
       expect(Number.isInteger(amount)).toBe(true)
   })
 
   test('the total is exactly its parts', () => {
     const t = totalsFor(3333, valid, DAY_OF_SALE)
 
-    expect(t.total).toBe(t.subtotal + t.excise + t.salesTax + t.localTax)
+    expect(t.total).toBe(t.subtotal + t.components.reduce((sum, c) => sum + c.amount, 0))
   })
 })
