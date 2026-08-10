@@ -76,7 +76,7 @@
       "name": "Cart",
       "icon": "cart.fill",
       "hasDedicatedPage": false,
-      "category": "commerce",
+      "category": "userland",
       "dashboard": {
         "highlight": true
       }
@@ -139,6 +139,16 @@
       }
     },
     {
+      "id": "delivery-stop",
+      "name": "DeliveryStop",
+      "icon": "tablecells.fill",
+      "hasDedicatedPage": false,
+      "category": "commerce",
+      "dashboard": {
+        "highlight": true
+      }
+    },
+    {
       "id": "deployment",
       "name": "Deployment",
       "icon": "tablecells.fill",
@@ -169,6 +179,13 @@
       }
     },
     {
+      "id": "driver-ping",
+      "name": "DriverPing",
+      "icon": "tablecells.fill",
+      "hasDedicatedPage": false,
+      "category": "commerce"
+    },
+    {
       "id": "email-list",
       "name": "EmailList",
       "icon": "envelope.badge.person.crop",
@@ -188,6 +205,16 @@
       "icon": "giftcard.fill",
       "hasDedicatedPage": true,
       "category": "commerce",
+      "dashboard": {
+        "highlight": true
+      }
+    },
+    {
+      "id": "inquiry",
+      "name": "Inquiry",
+      "icon": "tablecells.fill",
+      "hasDedicatedPage": false,
+      "category": "userland",
       "dashboard": {
         "highlight": true
       }
@@ -282,7 +309,7 @@
       "name": "Order",
       "icon": "list.clipboard.fill",
       "hasDedicatedPage": true,
-      "category": "commerce",
+      "category": "userland",
       "dashboard": {
         "highlight": true
       }
@@ -364,7 +391,7 @@
       "name": "Product",
       "icon": "cube.box.fill",
       "hasDedicatedPage": true,
-      "category": "commerce",
+      "category": "userland",
       "dashboard": {
         "highlight": true
       }
@@ -462,6 +489,33 @@
       "icon": "bubble.left.and.bubble.right.fill",
       "hasDedicatedPage": false,
       "category": "marketing"
+    },
+    {
+      "id": "special",
+      "name": "Special",
+      "icon": "tablecells.fill",
+      "hasDedicatedPage": false,
+      "category": "userland",
+      "dashboard": {
+        "highlight": true
+      }
+    },
+    {
+      "id": "store",
+      "name": "Store",
+      "icon": "tablecells.fill",
+      "hasDedicatedPage": false,
+      "category": "userland",
+      "dashboard": {
+        "highlight": true
+      }
+    },
+    {
+      "id": "store-product",
+      "name": "StoreProduct",
+      "icon": "tablecells.fill",
+      "hasDedicatedPage": false,
+      "category": "userland"
     },
     {
       "id": "subscriber",
