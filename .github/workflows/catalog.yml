@@ -1,20 +1,18 @@
 name: Catalog
 
-# Bring the shop's live inventory into the deployed database.
+# Bring the shop's live inventory into the deployed database, by hand.
 #
-# `buddy deploy` ships code and nothing else — no migrations, no seeders, no
-# import — and it installs no scheduler, so the nightly `menu:sync` declared in
-# app/Scheduler.ts has never run in production. The result was a deployed site
-# whose code was current and whose menu was the twenty hand-seeded products
-# from the day it first went up.
+# The nightly import is NOT here — it belongs to `app/Scheduler.ts`, and since
+# stacks 0.70.355 a deploy installs the systemd unit that runs it
+# (`erbamarkets-main-scheduler.service`). This ran on a cron of its own while
+# that was broken, and keeping it would have put two `menu:sync` runs on the
+# same minute: both write the same rows of one SQLite file, and the loser
+# leaves half a menu behind.
 #
-# This is that missing half. It runs on the box, because the database is a
-# SQLite file there and nothing off the machine can reach it.
+# What is left is the manual path — after a schema change, or when someone
+# needs the menu current now rather than at 04:00. It runs on the box, because
+# the database is a SQLite file there and nothing off the machine can reach it.
 on:
-  # Nightly, after close and before the shops open. The same 04:00 Los Angeles
-  # the scheduler asks for, expressed in UTC because cron here has no timezone.
-  schedule:
-    - cron: '0 11 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -82,10 +80,9 @@ jobs:
           '
 
       - name: Bring the catalog up to date
-        if: inputs.mode == 'sync' || inputs.mode == 'full' || github.event_name == 'schedule'
+        if: inputs.mode == 'sync' || inputs.mode == 'full'
         env:
-          # A schedule fires with no inputs, and the nightly job is the sync.
-          MODE: ${{ inputs.mode || 'sync' }}
+          MODE: ${{ inputs.mode }}
         run: |
           # The mode travels as an argument, not as a variable the remote shell
           # is expected to already have. Referencing one that only exists on the
@@ -116,8 +113,9 @@ jobs:
           fi
 
           # `full` also brings the schema up to date and seeds the rows an
-          # operator owns afterwards. The nightly case is the menu alone: stock
-          # and prices move daily, the shop's own settings do not.
+          # operator owns afterwards — the reason to reach for this rather than
+          # wait for 04:00. `sync` is the menu alone: stock and prices move
+          # daily, the shop's own settings do not.
           if [ "$mode" = 'full' ]; then
             ./buddy migrate
             ./buddy seed:catalog
@@ -130,7 +128,7 @@ jobs:
       # A sync that imported nothing is a failure that looks like a success, so
       # the count is checked rather than the exit code.
       - name: Check the menu is really there
-        if: inputs.mode == 'sync' || inputs.mode == 'full' || github.event_name == 'schedule'
+        if: inputs.mode == 'sync' || inputs.mode == 'full'
         run: |
           cards=$(curl -s -m 60 https://erba.stacksjs.com/menu | grep -oc 'class="card"' || echo 0)
           echo "products on the live menu: ${cards}"
