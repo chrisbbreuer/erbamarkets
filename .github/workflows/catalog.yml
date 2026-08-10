@@ -61,9 +61,18 @@ jobs:
             echo "--- systemd units ---"
             systemctl list-units --all --no-legend --plain 2>/dev/null | grep -i erbamarkets | head -10 || true
             echo "--- unit working directories ---"
-            for u in $(systemctl list-unit-files --no-legend --plain 2>/dev/null | grep -io "^[a-z0-9@._-]*erbamarkets[a-z0-9@._-]*" | head -5); do
-              echo "$u -> $(systemctl show -p WorkingDirectory --value "$u" 2>/dev/null)"
+            for u in $(systemctl list-units --all --no-legend --plain 2>/dev/null | awk "{print \$1}" | grep -i "^erbamarkets.*\.service$" | head -5); do
+              echo "$u -> $(systemctl show -p WorkingDirectory --value "$u" 2>/dev/null) [$(systemctl is-active "$u" 2>/dev/null)]"
             done
+            echo "--- inside the release dirs ---"
+            for d in /var/www/erbamarkets-main /var/www/erbamarkets-api; do
+              echo "== $d"
+              ls -la "$d" 2>/dev/null | head -14
+            done
+            echo "--- buddy + database ---"
+            find /var/www/erbamarkets-main /var/www/erbamarkets-api -maxdepth 3 \( -name buddy -o -name "*.sqlite" \) 2>/dev/null | head -10
+            echo "--- bun ---"
+            ls -l /root/.bun/bin/bun 2>/dev/null || which bun || echo "no bun on PATH"
           '
 
       - name: Bring the catalog up to date
