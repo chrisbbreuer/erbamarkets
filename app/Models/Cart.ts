@@ -147,18 +147,16 @@ export default defineModel({
     /**
      * The order this bag became, once it is checked out. Zero until then.
      *
-     * Which shop is fulfilling an order is the one fact the checkout was
-     * losing. `storeSlug` above records it while the customer is shopping, but
-     * the framework's commerce `Order` has no notion of a location — there is
-     * no Store model in the commerce bundle at all — so at the moment the bag
-     * converted, the answer disappeared and two counters had no way to tell
-     * whose order was whose.
+     * Originally this was how the fulfilling shop survived checkout: the
+     * framework's commerce `Order` has no notion of a location, so the answer
+     * disappeared the moment a bag converted and the cart was the only thing
+     * still holding it. `Order` carries `storeSlug` itself now — `extendModel`
+     * made that possible without forking the vendored file — so this is no
+     * longer load-bearing for that question.
      *
-     * Recorded here rather than on the order because this is the model the app
-     * owns. Putting a column on the vendored `Order` means diverging from a
-     * framework file that gets replaced on upgrade. The order's own location
-     * belongs upstream, in the commerce bundle, and until it exists there this
-     * is the join that answers the question.
+     * Kept because it is worth having on its own: it is the only link between
+     * what someone put in a bag and what they were eventually charged for,
+     * which is what a support conversation about a wrong order starts from.
      */
     orderId: {
       order: 14,
