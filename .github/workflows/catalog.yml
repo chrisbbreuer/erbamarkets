@@ -69,10 +69,16 @@ jobs:
               echo "== $d"
               ls -la "$d" 2>/dev/null | head -14
             done
-            echo "--- buddy + database ---"
-            find /var/www/erbamarkets-main /var/www/erbamarkets-api -maxdepth 3 \( -name buddy -o -name "*.sqlite" \) 2>/dev/null | head -10
+            echo "--- current release ---"
+            readlink -f /var/www/erbamarkets-main/current
+            echo "--- shared (what survives a release) ---"
+            find /var/www/erbamarkets-main/shared /var/www/erbamarkets-api/shared -maxdepth 3 2>/dev/null | head -20
+            echo "--- the database ---"
+            find /var/www/erbamarkets-main /var/www/erbamarkets-api -name "*.sqlite" -o -name "*.db" 2>/dev/null | head -10
+            echo "--- how the app is configured to reach it ---"
+            grep -hE "^DB_CONNECTION|^DB_DATABASE|^DB_HOST" /var/www/erbamarkets-main/current/.env 2>/dev/null || echo "(no .env at current)"
             echo "--- bun ---"
-            ls -l /root/.bun/bin/bun 2>/dev/null || which bun || echo "no bun on PATH"
+            ls -l /root/.bun/bin/bun 2>/dev/null || command -v bun || echo "no bun on PATH"
           '
 
       - name: Bring the catalog up to date
@@ -84,7 +90,7 @@ jobs:
           FULL='${{ inputs.mode }}'
           ssh -o StrictHostKeyChecking=yes root@${{ secrets.DEPLOY_HOST }} "
             set -euo pipefail
-            cd '${{ vars.RELEASE_PATH || '/var/www/erbamarkets' }}'
+            cd /var/www/erbamarkets-main/current
             export PATH=\"/root/.bun/bin:\$PATH\"
             if [ \"\$FULL\" = 'full' ]; then
               ./buddy migrate
