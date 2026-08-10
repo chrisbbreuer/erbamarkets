@@ -407,7 +407,14 @@ async function retireUnstockedProducts(): Promise<void> {
 
 export default function (buddy: CLI): void {
   buddy
-    .command('sync:menu', 'Import the live menu from the point of sale into the catalog')
+    // `menu:sync`, matching `menu:index` beside it and the key this command is
+    // registered under. It read `sync:menu` while the registry, the scheduler
+    // and the deploy workflow all said `menu:sync`, so every one of them got
+    // "Command not found" — including the nightly job, which is the whole
+    // reason the deployed menu was still the seed data. The old spelling stays
+    // as an alias so anything already calling it keeps working.
+    .command('menu:sync', 'Import the live menu from the point of sale into the catalog')
+    .alias('sync:menu')
     .option('--limit <count>', 'Import only the first N products', { default: 0 })
     .option('--dry-run', 'Report what would change without writing', { default: false })
     .action(async (options: { limit?: string | number, dryRun?: boolean }) => {
