@@ -102,6 +102,19 @@ jobs:
           cd /var/www/erbamarkets-main/current
           export PATH="/root/.bun/bin:$PATH"
 
+          # Which release this is actually running. `current` follows the last
+          # deploy, so a catalog run started moments after a push executes the
+          # release *before* it — which is how a command added in that push came
+          # back "not found" here while working perfectly on a laptop.
+          echo "release: $(readlink -f /var/www/erbamarkets-main/current)"
+
+          # Fail on a release that does not have the command yet, rather than
+          # part-way through with the schema already migrated.
+          if ! ./buddy menu:sync --help >/dev/null 2>&1; then
+            echo "this release has no menu:sync — wait for the deploy to finish, then re-run" >&2
+            exit 1
+          fi
+
           # `full` also brings the schema up to date and seeds the rows an
           # operator owns afterwards. The nightly case is the menu alone: stock
           # and prices move daily, the shop's own settings do not.
