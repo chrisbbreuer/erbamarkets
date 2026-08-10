@@ -52,8 +52,8 @@ route.post('/bag', async (request: any) => {
   if (!product)
     return response.notFound('That product is no longer on the menu.')
 
-  if (!product.is_available || product.inventory_count < 1)
-    return response.badRequest(`${product.name} just sold out.`)
+  if (!product.is_available)
+    return response.badRequest(`${product.name} is no longer on the menu.`)
 
   /*
    * The shop the bag belongs to.
@@ -65,18 +65,34 @@ route.post('/bag', async (request: any) => {
    * mistake only surfaces at checkout.
    */
   const chosenStore = storeFromCookie(request) || String(request.input('storeSlug', '')) || ''
+
+  /*
+   * Stock is a fact about a shop, not about a product.
+   *
+   * This used to gate on `product.inventory_count`, a single number for a
+   * business with two counters — and one the point of sale never reports, so
+   * every imported product carried null and `null < 1` turned the whole menu
+   * into "just sold out". The shop's own row is the only thing that knows.
+   */
+  if (chosenStore && !await storeStocks(chosenStore, slug)) {
+    // "Sold out" and "we have no feed from that shop" are different sentences,
+    // and only one of them is true of Sawtelle. Saying the shelf is empty when
+    // the shop simply cannot take online orders sends a customer away from a
+    // room that has the product in it.
+    const store = await Store.where('slug', chosenStore).first()
+    const known = store ? await StoreProduct.where('store_id', store.id).first() : null
+
+    return response.badRequest(known
+      ? `${product.name} is not on the shelf at ${store?.short_name ?? 'that shop'} today.`
+      : `${store?.short_name ?? 'That shop'} does not take online orders yet — call ${store?.store_phone ?? 'the shop'} to order.`)
+  }
+
   const cart = await currentCart(token, chosenStore)
 
   // A bag holds one shop's stock. Anything already in it was added from
   // somewhere else, so say so rather than mixing two counters silently.
-  if (chosenStore && cart.store_slug && cart.store_slug !== chosenStore) {
-    const stocked = await storeStocks(chosenStore, slug)
-
-    if (!stocked)
-      return response.badRequest(`${product.name} is not on the shelf at that shop today.`)
-
+  if (chosenStore && cart.store_slug && cart.store_slug !== chosenStore)
     await Cart.where('id', cart.id).update({ storeSlug: chosenStore })
-  }
   const existing = await CartItem.where('cart_id', cart.id).where('product_sku', slug).first()
 
   if (existing) {
@@ -214,7 +230,9 @@ route.post('/orders', async (request: any) => {
     })
   }
 
-  await Cart.where('id', cart.id).update({ status: 'converted' })
+  // Keeps which shop the order is for. The framework's Order carries no
+  // location, so without this the answer is gone the moment the bag converts.
+  await Cart.where('id', cart.id).update({ status: 'converted', orderId: order.id })
 
   return response.created({
     orderId: order.id,

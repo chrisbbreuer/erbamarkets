@@ -74,6 +74,7 @@
   },
   "dependencies": {
     "@stacksjs/logging": "0.70.348",
+    "@stacksjs/stx": "0.2.170",
     "maplibre-gl": "^6.2.0",
     "pickier": "^0.1.49",
     "stacks": "^0.70.346"
@@ -95,10 +96,10 @@
     "better-dx": "^0.2.22"
   },
   "overrides": {
-    "@stacksjs/stx": "^0.2.164",
-    "@stacksjs/components": "^0.2.164",
-    "bun-plugin-stx": "^0.2.164",
-    "stx-router": "^0.2.164",
+    "@stacksjs/stx": "^0.2.170",
+    "@stacksjs/components": "^0.2.170",
+    "bun-plugin-stx": "^0.2.170",
+    "stx-router": "^0.2.170",
     "ts-images": "^0.2.8",
     "@stacksjs/image": "^0.70.318"
   }

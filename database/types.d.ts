@@ -180,6 +180,7 @@ declare module '@stacksjs/database' {
       currency: unknown
       notes: unknown
       applied_coupon_id: unknown
+      order_id: unknown
       customer_id: number
       coupon_id: number
     }

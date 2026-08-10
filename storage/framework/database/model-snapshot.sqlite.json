@@ -1322,6 +1322,15 @@
               "delivery",
               "pickup"
             ]
+          },
+          {
+            "name": "order_id",
+            "type": "integer",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": 0
           }
         ],
         "indexes": [
@@ -9965,7 +9974,7 @@
       }
     ]
   },
-  "hash": "31f1599d692eef9b8de1f2147833602e68eb8b3347af5fa34ed51b63493235b0",
+  "hash": "b2bb4aad5003cc306f85b81078d1a0246794137c9876502203061ef488be4b3e",
   "dialect": "sqlite",
-  "updatedAt": "2026-08-09T19:57:04.581Z"
+  "updatedAt": "2026-08-10T00:16:51.515Z"
 }

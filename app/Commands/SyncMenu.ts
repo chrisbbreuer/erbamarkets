@@ -63,15 +63,22 @@ const CATEGORY_BY_KIND: Record<string, string> = {
   'gear': 'gear',
 }
 
-/** Categories the importer may create when Jane sends a kind we have no aisle for. */
-const CATEGORY_NAMES: Record<string, string> = {
-  'flower': 'Flower',
-  'cartridges': 'Cartridges',
-  'edibles': 'Edibles',
-  'pre-rolls': 'Pre-Rolls',
-  'concentrates': 'Concentrates',
-  'wellness': 'Wellness',
-  'gear': 'Gear',
+/**
+ * Aisles the importer may create, with the copy a customer reads.
+ *
+ * Named here rather than left to the seeder because the importer is what
+ * actually creates them on a fresh database — `gear` had never been seeded, so
+ * it arrived with no description and sorted last behind a placeholder order of
+ * 99, and the menu printed an unlabelled aisle holding twenty-six products.
+ */
+const CATEGORIES: Record<string, { name: string, description: string, order: number }> = {
+  'flower': { name: 'Flower', description: 'Indoor, sun grown and top shelf, by the eighth or the gram.', order: 1 },
+  'cartridges': { name: 'Cartridges', description: 'Pods, 510 carts and all-in-one disposables.', order: 2 },
+  'edibles': { name: 'Edibles', description: 'Gummies, chews, mints and drinks, dosed and labeled.', order: 3 },
+  'pre-rolls': { name: 'Pre-Rolls', description: 'Singles, multi-packs and infused.', order: 4 },
+  'concentrates': { name: 'Concentrates', description: 'Live resin, rosin, badder and hash.', order: 5 },
+  'wellness': { name: 'Wellness', description: 'Tinctures, topicals and high-CBD ratios.', order: 6 },
+  'gear': { name: 'Gear', description: 'Papers, grinders, batteries and everything else behind the counter.', order: 7 },
 }
 
 const STRAIN_TYPES = new Set(['indica', 'sativa', 'hybrid', 'cbd'])
@@ -95,13 +102,18 @@ async function categoryIdFor(kind: string, cache: Map<string, number>): Promise<
   if (cache.has(categorySlug))
     return cache.get(categorySlug)
 
+  const declared = CATEGORIES[categorySlug]
   const existing = await Category.where('slug', categorySlug).first()
 
+  // Backfill an aisle created by an earlier run before this table had copy.
+  if (existing && declared && !existing.description)
+    await Category.update(existing.id, { name: declared.name, description: declared.description, displayOrder: declared.order })
+
   const row = existing ?? await Category.create({
-    name: CATEGORY_NAMES[categorySlug] ?? categorySlug,
+    name: declared?.name ?? categorySlug,
     slug: categorySlug,
-    description: '',
-    displayOrder: 99,
+    description: declared?.description ?? '',
+    displayOrder: declared?.order ?? 99,
     isActive: true,
   })
 
@@ -154,7 +166,17 @@ async function upsertProduct(
     cbdPercentage: item.cbd,
     brandLine: item.brandLine,
     imageUrl: item.imageUrl,
-    rating: item.rating,
+    /*
+     * `rating` and `reviewCount` are deliberately absent.
+     *
+     * They are cached aggregates of the reviews customers leave on *this*
+     * site, maintained by the review system. The point of sale reports its own
+     * marketplace rating, which is a different number about a different
+     * audience, and writing it here means the nightly sync silently replaces
+     * every product's rating with it — usually 0, because most items have no
+     * marketplace reviews. Three products had already been zeroed that way
+     * before a full run would have taken all of them.
+     */
     categoryId: await categoryIdFor(item.kind, caches.category),
     manufacturerId: await manufacturerIdFor(item.brand, caches.manufacturer),
     isAvailable: true,
@@ -340,6 +362,47 @@ export async function syncMenu(options: SyncOptions = {}): Promise<void> {
       + `${skipped} not carried${failed ? `, ${failed} failed` : ''}`,
     )
   }
+
+  if (!options.dryRun && !options.limit)
+    await retireUnstockedProducts()
+}
+
+/**
+ * Take down products no shop stocks.
+ *
+ * `seed:catalog` writes a small hand-built menu so a fresh checkout renders
+ * before this has ever run. Those rows have no store inventory, and after a
+ * real import they are twenty invented products sitting in the same table as
+ * six hundred real ones — invisible on the menu, which filters to what is
+ * stocked, but present in the dashboard, in exports, and in anything that
+ * counts rows.
+ *
+ * Marked unavailable rather than deleted, for the same reason a retired
+ * StoreProduct is: an order may reference one, and a stale link should say we
+ * no longer carry it rather than 404.
+ *
+ * Only runs on a complete pass. A `--limit` run has seen a fraction of the
+ * menu, so "not stocked" would mean "not reached".
+ */
+async function retireUnstockedProducts(): Promise<void> {
+  const [products, stock] = await Promise.all([
+    Product.where('is_available', true).get(),
+    StoreProduct.where('is_available', true).get(),
+  ])
+
+  const stocked = new Set((stock as any[]).map(row => row.product_id))
+  let retired = 0
+
+  for (const product of products as any[]) {
+    if (stocked.has(product.id))
+      continue
+
+    await Product.update(product.id, { isAvailable: false })
+    retired++
+  }
+
+  if (retired)
+    log.info(`${retired} product(s) no shop stocks are now unavailable`)
 }
 
 export default function (buddy: CLI): void {

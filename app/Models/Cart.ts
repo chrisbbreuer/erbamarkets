@@ -143,6 +143,30 @@ export default defineModel({
       validation: { rule: schema.string() },
       factory: () => '',
     },
+
+    /**
+     * The order this bag became, once it is checked out. Zero until then.
+     *
+     * Which shop is fulfilling an order is the one fact the checkout was
+     * losing. `storeSlug` above records it while the customer is shopping, but
+     * the framework's commerce `Order` has no notion of a location — there is
+     * no Store model in the commerce bundle at all — so at the moment the bag
+     * converted, the answer disappeared and two counters had no way to tell
+     * whose order was whose.
+     *
+     * Recorded here rather than on the order because this is the model the app
+     * owns. Putting a column on the vendored `Order` means diverging from a
+     * framework file that gets replaced on upgrade. The order's own location
+     * belongs upstream, in the commerce bundle, and until it exists there this
+     * is the join that answers the question.
+     */
+    orderId: {
+      order: 14,
+      fillable: true,
+      default: 0,
+      validation: { rule: schema.number().min(0) },
+      factory: () => 0,
+    },
   },
 
   dashboard: {
