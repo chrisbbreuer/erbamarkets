@@ -4634,6 +4634,66 @@
             "isUnique": false,
             "isNullable": true,
             "hasDefault": false
+          },
+          {
+            "name": "store_slug",
+            "type": "string",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": "",
+            "maxLength": 64
+          },
+          {
+            "name": "is_medical",
+            "type": "boolean",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": false
+          },
+          {
+            "name": "mmic_number",
+            "type": "string",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": "",
+            "maxLength": 32
+          },
+          {
+            "name": "mmic_expires_at",
+            "type": "string",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": "",
+            "maxLength": 32
+          },
+          {
+            "name": "exempted_tax_amount",
+            "type": "integer",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": 0
+          },
+          {
+            "name": "store_id",
+            "type": "bigint",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": false,
+            "references": {
+              "table": "stores",
+              "column": "id"
+            }
           }
         ],
         "indexes": [
@@ -9974,7 +10034,7 @@
       }
     ]
   },
-  "hash": "b2bb4aad5003cc306f85b81078d1a0246794137c9876502203061ef488be4b3e",
+  "hash": "e70d7ca6b1347ceb48b660e438073e74a5ff872c60fd76522106df0d688d56cc",
   "dialect": "sqlite",
-  "updatedAt": "2026-08-10T00:16:51.515Z"
+  "updatedAt": "2026-08-10T00:54:25.776Z"
 }

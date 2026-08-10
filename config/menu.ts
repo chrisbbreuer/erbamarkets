@@ -32,13 +32,23 @@ export default {
   baseUrl: 'https://www.erbamarkets.com/menu',
 
   /**
-   * Recreational only, deliberately.
+   * One entry per *location*, not per licence.
    *
-   * The medical list (store 2289) is the same 649 products at the same address;
-   * it differs in tax treatment and in requiring a state MMIC at checkout,
-   * neither of which this storefront handles yet. Importing it would double
-   * every row for no visible difference. Add it here once medical checkout
-   * exists.
+   * The point of sale models a licence: West LA is two stores there, 2219
+   * recreational and 2289 medical, same address and very largely the same six
+   * hundred products. It is tempting to import both now that medical checkout
+   * exists, and it would be wrong — the store switcher asks a customer which
+   * room to collect from, and answering it with a tax status would put one
+   * building in the list twice.
+   *
+   * Medical is a fact about the customer, not the shop. A valid MMIC removes
+   * the sales tax at checkout (see `config/tax.ts`), on the same product from
+   * the same shelf. So the recreational list is the shelf, and the card is
+   * what changes the bill.
+   *
+   * If the two lists ever genuinely diverge — a product one licence may sell
+   * and the other may not — this becomes a per-store availability question and
+   * belongs in `StoreProduct`, not in a second location.
    */
   sources: [
     { store: 'erba-west-la', janeStoreId: 2219, licence: 'recreational' },

@@ -25,6 +25,10 @@ declare global {
   const resolveStoreSlug: typeof autoImports.resolveStoreSlug
   const emptyProductReviews: typeof autoImports.emptyProductReviews
   const STORE_COOKIE: typeof autoImports.STORE_COOKIE
+  const looksLikeMmic: typeof autoImports.looksLikeMmic
+  const cardIsValidOn: typeof autoImports.cardIsValidOn
+  const totalsFor: typeof autoImports.totalsFor
+  const blendedRate: typeof autoImports.blendedRate
 }
 
 export {}

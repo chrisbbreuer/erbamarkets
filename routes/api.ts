@@ -4,11 +4,12 @@ import { response, route } from '@stacksjs/router'
 import Cart from '../app/Models/Cart'
 import Inquiry from '../app/Models/Inquiry'
 import Store from '../app/Models/Store'
+import { blendedRate, totalsFor as taxFor } from '../resources/functions/tax'
 import StoreProduct from '../app/Models/StoreProduct'
 import Product from '../app/Models/Product'
 import CartItem from '../storage/framework/defaults/app/Models/commerce/CartItem'
 import Customer from '../storage/framework/defaults/app/Models/commerce/Customer'
-import Order from '../storage/framework/defaults/app/Models/commerce/Order'
+import Order from '../app/Models/Order'
 import OrderItem from '../storage/framework/defaults/app/Models/commerce/OrderItem'
 import Subscriber from '../storage/framework/defaults/app/Models/Subscriber'
 
@@ -28,9 +29,10 @@ import Subscriber from '../storage/framework/defaults/app/Models/Subscriber'
  * in the matching header, so these POSTs are protected like any other.
  */
 
-/** California cannabis excise plus LA district and state sales tax, combined. */
-const TAX_RATE = 0.2725
 const DELIVERY_MINIMUM_CENTS = 3000
+
+/** The adult-use rate, for the per-line figure the commerce schema stores. */
+const BLENDED_TAX_RATE = blendedRate()
 
 /**
  * How far a van goes. Both rooms are on the Westside and the delivery FAQ
@@ -108,8 +110,11 @@ route.post('/bag', async (request: any) => {
       quantity,
       unitPrice: product.price,
       totalPrice: quantity * product.price,
-      taxRate: TAX_RATE,
-      taxAmount: Math.round(quantity * product.price * TAX_RATE),
+      // The line's own tax, priced as adult use. A medical exemption applies
+      // to the bag at checkout, once a card has been offered — a line written
+      // while someone is still shopping cannot know.
+      taxRate: BLENDED_TAX_RATE,
+      taxAmount: taxFor(quantity * product.price).tax,
       discountPercentage: 0,
       discountAmount: 0,
       productName: product.name,
@@ -164,7 +169,20 @@ route.post('/orders', async (request: any) => {
     return response.badRequest('Your bag is empty.')
 
   const fulfillment = request.input('fulfillment', 'delivery') === 'pickup' ? 'pickup' : 'delivery'
-  const totals = totalsFor(items)
+
+  /*
+   * A medical card, if the customer has one.
+   *
+   * A qualified patient holding a valid MMIC pays no sales tax on medicinal
+   * cannabis. An absent, malformed or expired card is not an error — the order
+   * is simply priced as adult use, which is what the counter would do rather
+   * than refusing the sale.
+   */
+  const mmicNumber = String(request.input('mmicNumber', '')).trim()
+  const mmicExpiresAt = String(request.input('mmicExpiresAt', '')).trim()
+  const card = mmicNumber ? { number: mmicNumber, expiresAt: mmicExpiresAt } : null
+
+  const totals = taxFor(subtotalOf(items), card)
 
   if (fulfillment === 'delivery' && totals.subtotal < DELIVERY_MINIMUM_CENTS)
     return response.badRequest('Delivery orders start at $30. Add a little more, or switch to pickup.')
@@ -205,6 +223,14 @@ route.post('/orders', async (request: any) => {
     totalAmount: totals.total,
     currency: 'USD',
     taxAmount: totals.tax,
+    // Which shop is filling it, and whether it was sold as medicine. Both are
+    // facts about the sale: the exemption is auditable, and a receipt
+    // reprinted next year has to show the numbers charged on the day.
+    storeSlug: cart.store_slug ?? '',
+    isMedical: totals.isMedical,
+    mmicNumber: totals.isMedical ? mmicNumber : '',
+    mmicExpiresAt: totals.isMedical ? mmicExpiresAt : '',
+    exemptedTaxAmount: totals.exempted,
     discountAmount: 0,
     deliveryFee: 0,
     tipAmount: 0,
@@ -230,8 +256,6 @@ route.post('/orders', async (request: any) => {
     })
   }
 
-  // Keeps which shop the order is for. The framework's Order carries no
-  // location, so without this the answer is gone the moment the bag converts.
   await Cart.where('id', cart.id).update({ status: 'converted', orderId: order.id })
 
   return response.created({
@@ -586,22 +610,33 @@ async function currentCart(token: string, storeSlug: string): Promise<any> {
   })
 }
 
-function totalsFor(items: any[]): { count: number, subtotal: number, tax: number, total: number } {
-  const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0)
-  const tax = Math.round(subtotal * TAX_RATE)
+/** What the items come to before any tax. */
+function subtotalOf(items: any[]): number {
+  return items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0)
+}
+
+/**
+ * What the bag drawer shows.
+ *
+ * Priced as adult use, always: the card is asked for at checkout, not while
+ * someone is still shopping, so quoting the medical total here would show a
+ * number the customer has not yet qualified for.
+ */
+function bagTotals(items: any[]): { count: number, subtotal: number, tax: number, total: number } {
+  const totals = taxFor(subtotalOf(items))
 
   return {
     count: items.reduce((sum, item) => sum + item.quantity, 0),
-    subtotal,
-    tax,
-    total: subtotal + tax,
+    subtotal: totals.subtotal,
+    tax: totals.tax,
+    total: totals.total,
   }
 }
 
 /** Recomputes the cart's stored totals, then returns what the drawer renders. */
 async function bagSummary(cartId: number): Promise<Record<string, unknown>> {
   const items = await CartItem.where('cart_id', cartId).get()
-  const totals = totalsFor(items)
+  const totals = bagTotals(items)
 
   await Cart.where('id', cartId).update({
     totalItems: totals.count,

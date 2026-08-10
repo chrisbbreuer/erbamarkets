@@ -640,8 +640,14 @@ declare module '@stacksjs/database' {
       delivery_latitude: unknown
       delivery_longitude: unknown
       applied_coupon_id: unknown
+      store_slug: unknown
+      is_medical: unknown
+      mmic_number: unknown
+      mmic_expires_at: unknown
+      exempted_tax_amount: unknown
       customer_id: number
       coupon_id: number
+      store_id: number
     }
     pages: {
       // columns

@@ -74,6 +74,7 @@
   },
   "dependencies": {
     "@stacksjs/logging": "0.70.348",
+    "@stacksjs/orm": "0.70.350",
     "@stacksjs/stx": "0.2.170",
     "maplibre-gl": "^6.2.0",
     "pickier": "^0.1.49",

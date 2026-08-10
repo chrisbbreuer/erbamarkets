@@ -159,6 +159,14 @@ const checkoutUnit = state('')
 const checkoutPostalCode = state('')
 const checkoutNotes = state('')
 
+/*
+ * A medical card, for the customers who hold one. Opt-in, so an adult-use
+ * checkout — which is most of them — never sees the extra fields.
+ */
+const isMedical = state(false)
+const mmicNumber = state('')
+const mmicExpiresAt = state('')
+
 const checkoutReady = derived(() => {
   if (!checkoutName().trim() || !checkoutPhone().trim())
     return false
@@ -257,18 +265,27 @@ async function placeOrder() {
     unit: checkoutUnit().trim(),
     postalCode: checkoutPostalCode().trim(),
     notes: checkoutNotes().trim(),
+    // Sent only when offered. The server decides whether the card qualifies —
+    // it knows the date of the sale and owns the tax arithmetic, and a
+    // discount the browser could assert for itself would not be one.
+    mmicNumber: isMedical() ? mmicNumber().trim() : '',
+    mmicExpiresAt: isMedical() ? mmicExpiresAt().trim() : '',
   })
 
   if (!result)
     return
 
   orderReference.set(result.reference)
+  orderExempted.set(result.exempted ?? 0)
   orderTrackingUrl.set(result.trackingUrl ?? '')
   orderAddress.set(result.address ?? '')
   bagItems.set([])
   bagCount.set(0)
   bagSubtotalCents.set(0)
 }
+
+/** Sales tax the card took off, so the confirmation can say so. */
+const orderExempted = state(0)
 
 const vipEmail = state('')
 const vipMessage = state('')
@@ -566,6 +583,8 @@ onMount(() => {
         <strong>{{ orderReference() }}</strong>
         <p class="drawer-empty">We are packing it now. You get a text when it is on the way, usually within 45 to 60 minutes.</p>
         <p class="drawer-address mono" :if="orderAddress()">{{ orderAddress() }}</p>
+        {{-- Says what the card was actually worth, in money, on this order. --}}
+        <p class="drawer-note" :if="orderExempted() > 0">Your card took {{ dollars(orderExempted()) }} of sales tax off this order.</p>
         <a class="btn btn-primary btn-small" :if="orderTrackingUrl()" :href="orderTrackingUrl()">Track it</a>
         <button type="button" class="btn btn-ghost btn-small" @click="orderReference.set('')">Start another order</button>
       </div>
@@ -620,6 +639,36 @@ onMount(() => {
             <label for="checkout-notes">Notes for the driver</label>
             <input id="checkout-notes" type="text" placeholder="Gate code, buzzer, where to park" x-model.trim="checkoutNotes">
           </div>
+
+          {{--
+            A medical card, for anyone who holds one.
+
+            Collapsed behind a checkbox rather than shown by default: the great
+            majority of orders are adult use, and two more fields on every
+            checkout to serve a minority is how a form gets abandoned. Opt-in
+            keeps it one click away for the people it is for.
+
+            Not a claim the customer has to prove here. The exemption is
+            settled at the counter, where the law puts it — an unreadable or
+            lapsed card is priced as adult use rather than refused.
+          --}}
+          <div class="field-check">
+            <input id="checkout-medical" type="checkbox" x-model="isMedical">
+            <label for="checkout-medical">I have a medical card (MMIC)</label>
+          </div>
+
+          <div class="field-row" :if="isMedical()">
+            <div class="field">
+              <label for="checkout-mmic">Card number</label>
+              <input id="checkout-mmic" type="text" placeholder="As printed on the card" x-model.trim="mmicNumber">
+            </div>
+            <div class="field">
+              <label for="checkout-mmic-expiry">Expires</label>
+              <input id="checkout-mmic-expiry" type="date" x-model.trim="mmicExpiresAt">
+            </div>
+          </div>
+
+          <p class="drawer-hint" :if="isMedical()">A valid card takes the sales tax off. Excise and the city tax still apply. Bring it with you — we check it at handover.</p>
         </div>
 
         <div class="totals mono">
@@ -627,6 +676,15 @@ onMount(() => {
           <div><span>Tax and excise</span><span>{{ bagTax() }}</span></div>
           <div class="grand"><span>Total</span><span>{{ bagTotal() }}</span></div>
         </div>
+
+        {{--
+          The quote stays adult use until the card has been checked, which
+          happens server-side when the order is placed. Promising the lower
+          total here and then charging the higher one would be worse than not
+          quoting it, so this says what will happen rather than showing a
+          number the customer has not yet qualified for.
+        --}}
+        <p class="drawer-note" :if="isMedical() && mmicNumber()">Sales tax comes off once we have checked the card.</p>
 
         <p class="drawer-note" :if="belowMinimum()">Delivery starts at {{ dollars(bagMinimum()) }}. Add a little more, or switch to pickup.</p>
         <p class="drawer-note" :if="bagNotice()">{{ bagNotice() }}</p>
