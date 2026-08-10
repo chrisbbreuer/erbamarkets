@@ -83,22 +83,36 @@ jobs:
 
       - name: Bring the catalog up to date
         if: inputs.mode == 'sync' || inputs.mode == 'full' || github.event_name == 'schedule'
+        env:
+          # A schedule fires with no inputs, and the nightly job is the sync.
+          MODE: ${{ inputs.mode || 'sync' }}
         run: |
-          # `full` also applies migrations and seeds the rows an operator owns
-          # afterwards (stores, specials, tax rates). `sync` is the nightly
-          # case: the menu changes, the shop's own settings do not.
-          FULL='${{ inputs.mode }}'
-          ssh -o StrictHostKeyChecking=yes root@${{ secrets.DEPLOY_HOST }} "
-            set -euo pipefail
-            cd /var/www/erbamarkets-main/current
-            export PATH=\"/root/.bun/bin:\$PATH\"
-            if [ \"\$FULL\" = 'full' ]; then
-              ./buddy migrate
-              ./buddy seed:catalog
-            fi
-            ./buddy menu:sync
-            ./buddy menu:index
-          "
+          # The mode travels as an argument, not as a variable the remote shell
+          # is expected to already have. Referencing one that only exists on the
+          # runner is what `set -u` catches on the far side, as an unbound
+          # variable rather than as the wrong branch — which is the better
+          # failure, but a failure all the same.
+          #
+          # Quoted heredoc, so the runner interpolates nothing: the script that
+          # arrives is the script written here.
+          ssh -o StrictHostKeyChecking=yes "root@${{ secrets.DEPLOY_HOST }}" bash -s -- "$MODE" <<'REMOTE'
+          set -euo pipefail
+          mode="${1:-sync}"
+
+          cd /var/www/erbamarkets-main/current
+          export PATH="/root/.bun/bin:$PATH"
+
+          # `full` also brings the schema up to date and seeds the rows an
+          # operator owns afterwards. The nightly case is the menu alone: stock
+          # and prices move daily, the shop's own settings do not.
+          if [ "$mode" = 'full' ]; then
+            ./buddy migrate
+            ./buddy seed:catalog
+          fi
+
+          ./buddy menu:sync
+          ./buddy menu:index
+          REMOTE
 
       # A sync that imported nothing is a failure that looks like a success, so
       # the count is checked rather than the exit code.
