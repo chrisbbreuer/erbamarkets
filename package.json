@@ -73,7 +73,7 @@
     "stx": "./buddy"
   },
   "dependencies": {
-    "@stacksjs/buddy": "^0.70.356",
+    "@stacksjs/buddy": "^0.70.357",
     "@stacksjs/commerce": "0.70.357",
     "@stacksjs/logging": "0.70.357",
     "@stacksjs/orm": "0.70.357",
