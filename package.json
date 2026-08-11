@@ -74,10 +74,11 @@
     "stx": "./buddy"
   },
   "dependencies": {
-    "@stacksjs/buddy": "^0.70.365",
-    "@stacksjs/commerce": "0.70.365",
-    "@stacksjs/logging": "0.70.365",
-    "@stacksjs/orm": "0.70.365",
+    "@stacksjs/buddy": "^0.70.366",
+    "@stacksjs/commerce": "0.70.366",
+    "@stacksjs/logging": "0.70.366",
+    "@stacksjs/orm": "0.70.366",
+    "@stacksjs/scheduler": "^0.70.366",
     "@stacksjs/stx": "0.2.170",
     "maplibre-gl": "^6.2.0",
     "pickier": "^0.1.49",
