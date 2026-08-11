@@ -769,18 +769,17 @@ export const tsCloud: TsCloudConfig = {
         NODE_ENV: 'production',
         APP_NAME: 'ERBA Markets',
         APP_URL: 'erba.stacksjs.com',
-        APP_KEY: env.APP_KEY || '',
         PORT_API: '3118',
         DB_CONNECTION: 'sqlite',
         DB_DATABASE_PATH: '/var/lib/erbamarkets/stacks.sqlite',
         // Typesense runs on the box already, installed and service-managed by
         // pantry, bound to loopback. The key is scoped to the erba_products
         // collection: that instance is shared with other tenants, so the admin
-        // key must never reach this app.
+        // key must never reach this app — which is why it is a secret in
+        // .env.production rather than a value here. Same for APP_KEY.
         TYPESENSE_HOST: '127.0.0.1',
         TYPESENSE_PORT: '8108',
         TYPESENSE_PROTOCOL: 'http',
-        TYPESENSE_API_KEY: env.TYPESENSE_API_KEY_PROD || '',
       },
     },
 
@@ -799,17 +798,16 @@ export const tsCloud: TsCloudConfig = {
         NODE_ENV: 'production',
         APP_NAME: 'ERBA Markets',
         APP_URL: 'erba.stacksjs.com',
-        APP_KEY: env.APP_KEY || '',
         DB_CONNECTION: 'sqlite',
         DB_DATABASE_PATH: '/var/lib/erbamarkets/stacks.sqlite',
         // Typesense runs on the box already, installed and service-managed by
         // pantry, bound to loopback. The key is scoped to the erba_products
         // collection: that instance is shared with other tenants, so the admin
-        // key must never reach this app.
+        // key must never reach this app — which is why it is a secret in
+        // .env.production rather than a value here. Same for APP_KEY.
         TYPESENSE_HOST: '127.0.0.1',
         TYPESENSE_PORT: '8108',
         TYPESENSE_PROTOCOL: 'http',
-        TYPESENSE_API_KEY: env.TYPESENSE_API_KEY_PROD || '',
       },
     },
   },
