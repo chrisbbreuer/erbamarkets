@@ -49,13 +49,19 @@ jobs:
       - name: Deploy
         env:
           APP_ENV: production
+          # The app's own secrets are NOT passed here any more — they live in
+          # the committed, encrypted `.env.production`, and the deploy decrypts
+          # them on the way out. This is the private half, the only thing the
+          # runner needs that the repository does not carry. Without it the
+          # deploy stops rather than shipping ciphertext as if it were a value.
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
+          # Not read by config/cloud.ts any more either: it satisfies the
+          # deploy's APP_KEY precondition on a runner, which has no plaintext
+          # `.env` to read one from and would otherwise generate a fresh key.
           APP_KEY: ${{ secrets.APP_KEY }}
           # The deploy resolves the box through the Hetzner API even when it is
           # attaching to an existing one rather than provisioning.
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
-          # Scoped to the erba_products collection. The box's Typesense is
-          # shared with other tenants, so the admin key must never come here.
-          TYPESENSE_API_KEY_PROD: ${{ secrets.TYPESENSE_API_KEY_PROD }}
         run: ./buddy deploy
 
       - name: Check the site answers
