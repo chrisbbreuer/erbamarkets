@@ -44,6 +44,26 @@ const {
    photo, which is what the grid frame needs. */
 const featuredProducts = products.filter(product => product.image).slice(0, 8)
 
+/**
+ * How long one lap of the brand marquee takes.
+ *
+ * It used to be a flat 42s, and 42s is not a speed - it is a lap time, on a
+ * track whose length depends on how many brands we carry and how long their
+ * names are. Twelve brands made that 60px per second: a phone's entire screen
+ * of names every six seconds, too fast to read one, which is why it registers
+ * as a thing glitching rather than a list of what is on the shelf. Sign a
+ * thirteenth brand and it would have sped up again.
+ *
+ * The speed is the constant now and the duration is derived from it. The
+ * width estimate is the only approximation in it: at 1.05rem/700 with 0.24em
+ * of tracking an uppercase glyph advances about 0.86em, or 14.4px, and the
+ * flex gap between names is a known 4.5rem. Measured against the rendered
+ * track that lands inside half a percent, and a marquee forgives the rest.
+ */
+const BRAND_PAN_PX_PER_SECOND = 28
+const brandTrackWidth = brands.reduce((total, brand) => total + (brand.length * 14.4) + 72, 0)
+const brandPanSeconds = Math.max(24, Math.round(brandTrackWidth / BRAND_PAN_PX_PER_SECOND))
+
 const deliveryFacts = [
   {
     title: 'No delivery fee',
@@ -396,7 +416,7 @@ onMount(() => {
       </section>
 
       <section class="brands" aria-label="Brands we carry">
-        <div class="brand-track">
+        <div class="brand-track" style="--brand-pan: {{ brandPanSeconds }}s">
           @foreach (brands as brand)
             <span>{{ brand }}</span>
           @endforeach

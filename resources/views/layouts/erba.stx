@@ -1141,8 +1141,30 @@
       @media (min-width: 1000px) { .hero-figure img { aspect-ratio: 5 / 6; } }
 
       /* ---------- brand marquee ---------- */
-      .brands { border-block: 1px solid var(--faint); padding: 1.9rem 0; overflow: hidden; }
-      .brand-track { display: flex; gap: 4.5rem; width: max-content; animation: brand-pan 42s linear infinite; }
+      /*
+       * Both edges fade rather than cut. A name that is halfway through
+       * arriving looks like a name that has been clipped, and the border above
+       * and below already draws the band; it does not also need two hard
+       * vertical seams.
+       */
+      .brands {
+        border-block: 1px solid var(--faint);
+        padding: 1.9rem 0;
+        overflow: hidden;
+        /* Prefixed too: iOS Safari only dropped the prefix in 15.4, and a
+           dispensary's traffic is phones, including old ones. */
+        -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+        mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+      }
+      /*
+       * The lap time comes from the page, which derives it from how long the
+       * list of brands actually is - see the note beside brandPanSeconds. The
+       * fallback is only for a render that somehow arrives without one.
+       */
+      .brand-track { display: flex; gap: 4.5rem; width: max-content; animation: brand-pan var(--brand-pan, 90s) linear infinite; }
+      /* Somewhere to stop, for anyone who wants to read a name rather than
+         watch it leave. */
+      .brands:hover .brand-track { animation-play-state: paused; }
       .brand-track span {
         font-size: 1.05rem;
         font-weight: 700;
