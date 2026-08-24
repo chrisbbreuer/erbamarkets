@@ -110,6 +110,13 @@
         --photo: saturate(0.9) contrast(1.02);
         --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%235b615a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         --logo-plate: #0b0d0c;
+
+        /*
+         * What lifts a popover off the page. A shadow is a light effect, so it
+         * cannot be one value for both rooms: the same 45% black that reads as
+         * depth on the dark theme reads as soot on paper.
+         */
+        --shadow-pop: 0 12px 32px rgb(15 18 14 / 16%);
       }
 
       html.dark {
@@ -137,6 +144,7 @@
         --photo: saturate(0.82) contrast(1.06);
         --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' stroke='%239ba09a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         --logo-plate: transparent;
+        --shadow-pop: 0 16px 40px rgb(0 0 0 / 55%);
       }
 
       :root {
@@ -326,6 +334,17 @@
         margin-inline: auto;
         min-width: 0;
         padding-block: 0.9rem;
+        /*
+         * A stacking context, so the header's own contents paint above the
+         * blur rather than through it. `backdrop-filter` on .nav was dropping
+         * the wordmark entirely: white artwork on transparency, no background
+         * of its own, composited away by the filtered layer. It survived on
+         * the light theme only because --logo-plate gives it an opaque plate
+         * there, which is why the logo went missing in dark mode and nowhere
+         * else. This fixes the class of bug rather than the one instance.
+         */
+        position: relative;
+        z-index: 1;
       }
       @media (min-width: 1024px) { .nav-inner { flex-wrap: nowrap; gap: 2rem; padding-block: 0; } }
       /*
@@ -395,12 +414,23 @@
         .mega, .nav-cta { display: inline-flex; }
         .nav-link-mobile { display: none; }
       }
-      .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
+      .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex: 0 1 auto; min-width: 0; }
 
-      /* Which shop the order comes from. Hover on desktop, always-open list on
-         touch — a hover-only menu is unreachable on a phone, and this is the
-         control the whole storefront hangs on. */
+      /*
+       * Which shop the order comes from.
+       *
+       * A <details>, so one mechanism serves every input: click, tap, and
+       * Enter on a focused summary all open it, and the browser owns the
+       * expanded state and its ARIA. What was here before was a hover-reveal
+       * with a touch fallback that laid every shop out inline, and that
+       * fallback was 274px wide inside a 342px header — enough, with the
+       * theme and bag buttons beside it, to push every page on the site 27px
+       * wider than the phone holding it. A closed disclosure is 110px.
+       */
       .store-switch { position: relative; }
+      /* The default triangle marker, removed in both engines' spellings. */
+      .store-switch > summary { list-style: none; }
+      .store-switch > summary::-webkit-details-marker { display: none; }
       .store-switch-label {
         display: inline-flex;
         align-items: center;
@@ -410,14 +440,16 @@
         border-radius: 999px;
         font-size: 0.82rem;
         white-space: nowrap;
-        cursor: default;
+        cursor: pointer;
       }
+      .store-switch-label:hover { border-color: var(--paper); }
+      .store-switch-label:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
       .store-switch-label::before {
         content: '';
         width: 0.45rem;
         height: 0.45rem;
         border-radius: 50%;
-        background: var(--accent, currentColor);
+        background: var(--acid);
       }
       /* Nothing chosen yet: an outline, so it reads as a question rather than
          a setting that is already correct. */
@@ -428,18 +460,20 @@
         top: calc(100% + 0.4rem);
         right: 0;
         min-width: 13rem;
+        max-width: min(18rem, calc(100vw - 2rem));
         padding: 0.35rem;
         border: 1px solid var(--faint-strong);
         border-radius: 0.75rem;
-        background: var(--surface, #fff);
-        box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.12s ease;
+        /*
+         * A theme token, not `var(--surface, #fff)`. Nothing on this layout
+         * ever defined --surface, so the fallback was the value that always
+         * applied: a white panel carrying inherited near-white text, which in
+         * the dark theme — the default one — made the shop list unreadable.
+         */
+        background: var(--ink-raised);
+        box-shadow: var(--shadow-pop);
         z-index: 40;
       }
-      .store-switch:hover .store-switch-menu,
-      .store-switch:focus-within .store-switch-menu { opacity: 1; visibility: visible; }
       .store-switch-option {
         display: flex;
         flex-direction: column;
@@ -453,13 +487,6 @@
       .store-switch-option:hover, .store-switch-option:focus-visible { background: var(--faint); }
       .store-switch-option.is-current { font-weight: 600; }
       .store-switch-hours { font-size: 0.74rem; opacity: 0.65; }
-
-      @media (hover: none) {
-        .store-switch-menu { position: static; opacity: 1; visibility: visible; box-shadow: none; border: 0; padding: 0; min-width: 0; }
-        .store-switch { display: flex; align-items: center; gap: 0.4rem; }
-        .store-switch-menu { display: flex; gap: 0.25rem; }
-        .store-switch-hours { display: none; }
-      }
 
       /* Where else a product can be had. Only rendered when the answer is
          "somewhere else", so it never states the obvious. */

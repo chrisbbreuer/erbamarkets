@@ -211,16 +211,18 @@ const switchNext = (() => {
         In the nav rather than on the menu page because it decides the price of
         everything on every page, and because a customer who has not chosen yet
         should be asked before they fill a bag they then have to rebuild. A
-        plain link per shop, not a dropdown: there are two, and a `<select>`
-        that needs scripts to do anything would be a worse control for the one
-        decision the whole storefront hangs on.
+        plain link per shop inside a native `<details>`, not a `<select>`: the
+        links work with scripts off, and the disclosure gives a mouse, a finger
+        and a keyboard the same open-and-close without a line of state. A
+        `<select>` that needs scripts to do anything would be a worse control
+        for the one decision the whole storefront hangs on.
       --}}
       @if (switchStores.length > 1)
-        <div class="store-switch">
+        <details class="store-switch">
           @if (switchCurrent)
-            <span class="store-switch-label">{{ switchCurrent.shortName }}</span>
+            <summary class="store-switch-label">{{ switchCurrent.shortName }}</summary>
           @else
-            <span class="store-switch-label store-switch-label-none">Pick a shop</span>
+            <summary class="store-switch-label store-switch-label-none">Pick a shop</summary>
           @endif
           <div class="store-switch-menu">
             @foreach (switchStores as store)
@@ -245,7 +247,7 @@ const switchNext = (() => {
               </a>
             @endforeach
           </div>
-        </div>
+        </details>
       @endif
 
       <a href="/menu" class="btn btn-primary btn-small nav-cta">Order online</a>
