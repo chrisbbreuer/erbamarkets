@@ -360,11 +360,18 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 0.75rem 1rem;
-        width: var(--shell);
         margin-inline: auto;
         min-width: 0;
-        padding-block: 0.9rem;
+        /*
+         * A narrower gutter and less padding than the page below it. The
+         * header is the one band where horizontal room decides how many rows
+         * it takes, and a row costs 50px of a 700px screen; the body keeps
+         * the full 3rem gutter because reading wants the margin and the
+         * header does not.
+         */
+        width: min(1440px, 100% - 2rem);
+        padding-block: 0.6rem;
+        gap: 0.45rem 0.75rem;
         /*
          * A stacking context, so the header's own contents paint above the
          * blur rather than through it. `backdrop-filter` on .nav was dropping
@@ -377,7 +384,7 @@
         position: relative;
         z-index: 1;
       }
-      @media (min-width: 1024px) { .nav-inner { flex-wrap: nowrap; gap: 2rem; padding-block: 0; } }
+      @media (min-width: 1024px) { .nav-inner { flex-wrap: nowrap; width: var(--shell); gap: 2rem; padding-block: 0; } }
       /*
        * The real ERBA lockup, which is white artwork on transparency. On the
        * light theme that leaves it invisible, so light mode sets a plate
@@ -398,15 +405,16 @@
          * shifted, which reads as the layout jumping rather than the theme
          * changing. Only the fill differs.
          */
-        padding: 0.5rem 0.75rem;
-        margin-left: -0.75rem;
+        padding: 0.35rem 0.6rem;
+        margin-left: -0.6rem;
         background: var(--logo-plate);
       }
       .wordmark img {
         display: block;
         width: auto;
-        height: 2.35rem;
+        height: 1.95rem;
       }
+      @media (min-width: 640px) { .wordmark { padding: 0.5rem 0.75rem; margin-left: -0.75rem; } .wordmark img { height: 2.35rem; } }
       @media (min-width: 1024px) { .wordmark img { height: 3rem; } }
       /*
        * The nav links were display:none below 1024px with no hamburger behind
@@ -459,12 +467,19 @@
        * sending people anyway.
        */
       .mega, .nav-cta { display: none; }
-      .nav-link-mobile { display: inline; }
+      /*
+       * `.nav-links` in the selector so this outranks the `.nav-links a` rule
+       * that gives every link its 44px tap height. Bare `.nav-link-mobile` is
+       * a class against a class-and-element, and it loses: the phone's Menu
+       * link stayed visible on desktop, beside the mega trigger, so the bar
+       * read "MENU MENU SPECIALS".
+       */
       @media (min-width: 1024px) {
         .mega, .nav-cta { display: inline-flex; }
-        .nav-link-mobile { display: none; }
+        .nav-links .nav-link-mobile { display: none; }
       }
-      .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex: 0 1 auto; min-width: 0; }
+      .nav-actions { display: flex; align-items: center; gap: 0.4rem; flex: 0 1 auto; min-width: 0; }
+      @media (min-width: 1024px) { .nav-actions { gap: 0.5rem; } }
 
       /*
        * Which shop the order comes from.
@@ -485,13 +500,14 @@
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        padding: 0.6rem 0.9rem;
+        padding: 0.5rem 0.7rem;
         border: 1px solid var(--faint-strong);
         border-radius: 999px;
-        font-size: 0.82rem;
+        font-size: 0.78rem;
         white-space: nowrap;
         cursor: pointer;
       }
+      @media (min-width: 1024px) { .store-switch-label { padding: 0.6rem 0.9rem; font-size: 0.82rem; } }
       .store-switch-label:hover { border-color: var(--paper); }
       .store-switch-label:focus-visible { outline: 2px solid var(--acid); outline-offset: 2px; }
       .store-switch-label::before {
@@ -545,8 +561,8 @@
       .bag-button {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 1.1rem;
+        gap: 0.4rem;
+        padding: 0.55rem 0.7rem;
         border: 1px solid var(--faint-strong);
         border-radius: 999px;
         background: transparent;
@@ -556,8 +572,18 @@
         text-transform: uppercase;
         cursor: pointer;
       }
+      @media (min-width: 1024px) { .bag-button { gap: 0.5rem; padding: 0.6rem 1.1rem; } }
       .bag-button:hover { border-color: var(--paper); }
-      .bag-count { min-width: 1.4rem; padding: 0 0.35rem; border-radius: 999px; background: var(--acid); color: var(--on-acid); font-weight: 700; }
+      .bag-count { min-width: 1.4rem; padding: 0 0.35rem; border-radius: 999px; background: var(--acid); color: var(--on-acid); font-weight: 700; text-align: center; }
+      /* The glyph below 1024px, the word above it — see the note in the
+         partial. Both are in the markup either way, and the aria-label on the
+         button names the control whichever one is showing. */
+      .bag-icon { width: 1.15rem; height: 1.15rem; }
+      .bag-label { display: none; }
+      @media (min-width: 1024px) {
+        .bag-icon { display: none; }
+        .bag-label { display: inline; }
+      }
 
 
       /*
@@ -569,8 +595,8 @@
       .theme-toggle {
         display: inline-grid;
         place-items: center;
-        width: 2.35rem;
-        height: 2.35rem;
+        width: 2.2rem;
+        height: 2.2rem;
         border: 1px solid var(--faint-strong);
         border-radius: 999px;
         background: transparent;
@@ -578,6 +604,7 @@
         cursor: pointer;
         transition: color 0.18s var(--ease), border-color 0.18s var(--ease);
       }
+      @media (min-width: 1024px) { .theme-toggle { width: 2.35rem; height: 2.35rem; } }
       .theme-toggle:hover { color: var(--paper); border-color: var(--paper); }
       .theme-toggle svg { width: 1.05rem; height: 1.05rem; grid-area: 1 / 1; }
       .theme-toggle .icon-sun { display: none; }
