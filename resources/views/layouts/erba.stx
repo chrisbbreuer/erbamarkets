@@ -176,16 +176,47 @@
        * a single duplicated rule.
        */
       .on-media {
-        --paper-rgb: var(--media-paper-rgb);
+        /*
+         * The whole palette, not only the channels it is composed from.
+         *
+         * A custom property whose value calls var() is resolved where it is
+         * *declared*, not where it is used. --paper is `rgb(var(--paper-rgb))`
+         * on :root, so it resolves there, against the page's channels, and
+         * arrives here as a finished colour that no longer remembers how it
+         * was made. Overriding --paper-rgb alone therefore moved `color` —
+         * which this block sets by hand, and which is why the bug hid — and
+         * left every derived token still speaking for the page.
+         *
+         * On the light theme that meant .btn-ghost painted near-black type
+         * on a dark photograph, .btn-primary painted white on the bright
+         * green at 1.9:1, and every --faint hairline over media was a black
+         * line on a black scrim. The age gate is an .on-media region, so the
+         * worst of it was the first thing a light-theme visitor ever saw.
+         */
         --ink-rgb: var(--scrim-rgb);
-        --acid: var(--media-acid);
+        --raised-rgb: 19 22 20;
+        --sunken-rgb: 7 9 8;
+        --paper-rgb: var(--media-paper-rgb);
         --muted: #9ba09a;
 
+        --acid: var(--media-acid);
+        --acid-rgb: 168 216 74;
+        --acid-dim: #7fae2c;
+        --acid-hover: #b9e563;
+        --on-acid: #0b0d0c;
+        --on-acid-rgb: 11 13 12;
+
+        --ink: rgb(var(--ink-rgb));
+        --ink-raised: rgb(var(--raised-rgb));
+        --ink-sunken: rgb(var(--sunken-rgb));
+        --paper: rgb(var(--paper-rgb));
+        --faint: rgb(var(--paper-rgb) / 0.10);
+        --faint-strong: rgb(var(--paper-rgb) / 0.22);
+
         /*
-         * Re-assert `color`, not just the variables. `color` inherits as a
-         * computed value from <body>, so a heading with no rule of its own keeps
-         * own keeps the page theme's ink no matter what --paper-rgb says here.
-         * In light mode that put near-black type on a dark photograph.
+         * Re-assert `color` as well. It inherits as a computed value from
+         * <body>, so a heading with no rule of its own keeps the page theme's
+         * ink no matter what --paper-rgb says here.
          */
         color: rgb(var(--paper-rgb));
       }
