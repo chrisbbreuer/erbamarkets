@@ -379,10 +379,15 @@
          * of its own, composited away by the filtered layer. It survived on
          * the light theme only because --logo-plate gives it an opaque plate
          * there, which is why the logo went missing in dark mode and nowhere
-         * else. This fixes the class of bug rather than the one instance.
+         * else.
+         *
+         * `isolation`, not `position: relative`. Both make a stacking context
+         * and only one of them also makes a containing block: with relative
+         * here the mega panel's `left: 0; right: 0` started resolving against
+         * this element instead of against the viewport-wide .nav, so the
+         * panel lost its full bleed and picked up a second gutter.
          */
-        position: relative;
-        z-index: 1;
+        isolation: isolate;
       }
       @media (min-width: 1024px) { .nav-inner { flex-wrap: nowrap; width: var(--shell); gap: 2rem; padding-block: 0; } }
       /*
@@ -435,8 +440,17 @@
         text-transform: uppercase;
       }
       .nav-links::-webkit-scrollbar { display: none; }
-      .nav-links a { color: var(--muted); white-space: nowrap; transition: color 0.18s var(--ease); }
-      .nav-links a:hover { color: var(--paper); }
+      /*
+       * Direct children only. The mega panel is rendered inside .nav-links —
+       * it has to be, the trigger lives there — so a descendant selector here
+       * reaches every link in the panel as well as the five in the bar. That
+       * was putting `white-space: nowrap` on the category list, which is a
+       * large part of why the panel's columns refused to be narrow, and once
+       * the tap-target rule below joined it, `align-items: center` on the
+       * featured tile collapsed its photograph to zero width.
+       */
+      .nav-links > a { color: var(--muted); white-space: nowrap; transition: color 0.18s var(--ease); }
+      .nav-links > a:hover { color: var(--paper); }
       .nav-links { order: 3; flex: 1 0 100%; }
       /*
        * The row is wider than a phone by design and scrolls, but nothing said
@@ -450,7 +464,7 @@
        * is the smallest thing a thumb can be asked to hit. The row pulls the
        * same amount back out of the header so the bar does not grow by it.
        */
-      .nav-links a { display: inline-flex; align-items: center; padding-block: 0.8rem; }
+      .nav-links > a { display: inline-flex; align-items: center; padding-block: 0.8rem; }
       .nav-links {
         margin-block: -0.65rem;
         -webkit-mask-image: linear-gradient(to right, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
@@ -458,7 +472,7 @@
       }
       @media (min-width: 1024px) {
         .nav-links { order: 0; flex: 0 1 auto; gap: 2rem; overflow: visible; margin-block: 0; font-size: 0.78rem; letter-spacing: 0.16em; -webkit-mask-image: none; mask-image: none; }
-        .nav-links a { padding-block: 0; }
+        .nav-links > a { padding-block: 0; }
       }
 
       /*
@@ -468,7 +482,7 @@
        */
       .mega, .nav-cta { display: none; }
       /*
-       * `.nav-links` in the selector so this outranks the `.nav-links a` rule
+       * `.nav-links` in the selector so this outranks the `.nav-links > a` rule
        * that gives every link its 44px tap height. Bare `.nav-link-mobile` is
        * a class against a class-and-element, and it loses: the phone's Menu
        * link stayed visible on desktop, beside the mega trigger, so the bar
@@ -676,7 +690,23 @@
         gap: 2.5rem;
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-      @media (min-width: 1100px) { .mega-inner { grid-template-columns: 1fr 1fr 1fr 1.15fr; gap: 3rem; } }
+      /*
+       * `minmax(0, …)`, not a bare `1fr`.
+       *
+       * `1fr` is `minmax(auto, 1fr)`, and that `auto` floor is min-content —
+       * so a column is never allowed to be narrower than the widest thing in
+       * it, and a grid whose columns' min-contents add up to more than the
+       * container simply grows past it. The feature column holds a 600px
+       * product photograph, which is what it grew past it by: at 1100–1200px
+       * the four columns wanted 1170px inside a 989px shell, the product
+       * name and its price hung 180px off the right-hand edge of the panel,
+       * and the page itself scrolled sideways for as long as the menu was
+       * open. The three link columns were squeezed to 177px to pay for it,
+       * which is the same bug seen from the other side.
+       *
+       * With a floor of zero the columns take the shares they were given.
+       */
+      @media (min-width: 1100px) { .mega-inner { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.15fr); gap: 3rem; } }
       .mega-col h3 {
         font-family: 'Geist Mono', ui-monospace, monospace;
         font-size: 11px;
@@ -691,6 +721,7 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 1rem;
+        min-width: 0;
         padding: 0.5rem 0;
         border-bottom: 1px solid transparent;
         font-size: 0.95rem;
@@ -698,16 +729,24 @@
         transition: color 0.18s var(--ease), border-color 0.18s var(--ease);
       }
       .mega-list a:hover { color: var(--acid); border-bottom-color: var(--faint-strong); }
-      .mega-list .count { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+      /* The name yields, the count does not: a count is three characters and
+         a category name can be "Concentrates". */
+      .mega-list a > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+      .mega-list .count { flex: 0 0 auto; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
       .mega-sub { margin-top: 0.45rem; font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
 
       /* The one picture in the panel, so the menu is not a wall of links. */
-      .mega-feature { display: flex; flex-direction: column; }
+      .mega-feature { display: flex; flex-direction: column; min-width: 0; }
       .mega-feature-media { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--ink-raised); }
-      .mega-feature-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
+      /* max-width as well as width: a replaced element with a percentage width
+         still offers its intrinsic 600px as its minimum contribution, which is
+         what made the column refuse to be narrower than the photograph. */
+      .mega-feature-media img { width: 100%; max-width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
       .mega-feature:hover .mega-feature-media img { transform: scale(1.04); }
-      .mega-feature-body { margin-top: 1.1rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-      .mega-feature h4 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+      .mega-feature-body { margin-top: 1.1rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; min-width: 0; }
+      .mega-feature-body > div { min-width: 0; }
+      .mega-feature-body > .mono { flex: 0 0 auto; }
+      .mega-feature h4 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; }
       .mega-feature .mega-sub { margin-top: 0.3rem; }
       .mega-foot {
         border-top: 1px solid var(--faint);
