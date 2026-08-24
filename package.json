@@ -82,7 +82,8 @@
     "@stacksjs/stx": "^0.2.182",
     "maplibre-gl": "^6.3.0",
     "pickier": "^0.1.56",
-    "stacks": "^0.70.376"
+    "stacks": "^0.70.376",
+    "ts-images": "^0.2.8"
   },
   "workspaces": [
     "storage/framework",

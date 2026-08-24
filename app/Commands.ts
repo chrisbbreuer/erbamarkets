@@ -34,4 +34,5 @@ export default {
   'account:create': { file: 'MakeAccount', aliases: ['user:create'] },
   'menu:index': { file: 'IndexMenu', aliases: ['index:menu'] },
   'menu:sync': { file: 'SyncMenu', aliases: ['sync:menu'] },
+  'images:build': { file: 'BuildImages', aliases: ['images'] },
 } satisfies CommandRegistry

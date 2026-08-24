@@ -1,0 +1,137 @@
+{{--
+  A photograph on this site: sized for the viewport that asked for it, holding
+  its own space, with something to look at while the file is still arriving.
+
+  **Why not `<Image>`.** Three components answer to that name here — the one in
+  `@stacksjs/components`, the one stx core renders for `@img`, and the vendored
+  framework default in `storage/framework/defaults/resources/components`. The
+  vendored one wins tag resolution, an app component of the same name does not
+  override it, and `buddy upgrade` rewrites it wholesale. So this takes a name
+  of its own rather than fighting for one.
+
+  It differs from the default in two ways that matter here.
+
+  The default styles itself with utility classes — `relative`, `block`,
+  `overflow-hidden`, `h-full`, `w-full`, `bg-stone-100 dark:bg-stone-900`. This
+  app writes its own CSS and Crosswind never scans `storage/framework`, so not
+  one of those rules is emitted into the page: used as-is, every photograph on
+  the site rendered at its intrinsic size inside an unstyled `<picture>`.
+  Everything structural is an inline style here, so the component carries its
+  own layout and does not care whether a utility framework is present.
+
+  And the placeholder paints on the `<picture>`, behind the image, rather than
+  as the image's own background. A file with any transparency in it showed the
+  placeholder through itself — and kept showing it after loading, because a
+  background on an `<img>` never goes away.
+
+  The placeholder is a SplatHash from `buddy images:build`: sixteen bytes,
+  decoded to a 32x32 bitmap and blurred by the browser's own upscaling. No
+  script runs, so it is there in the first paint and it survives with
+  JavaScript off. See `resources/functions/images.ts`.
+--}}
+<script server>
+interface ImageSource { type: string, srcset: string, media?: string }
+interface ImageProps {
+  src: string
+  alt: string
+  width?: number | string
+  height?: number | string
+  aspectRatio?: string
+  srcset?: string
+  sizes?: string
+  sources?: ImageSource[]
+  loading?: 'lazy' | 'eager'
+  decoding?: 'async' | 'sync' | 'auto'
+  fetchpriority?: 'high' | 'low' | 'auto'
+  priority?: boolean
+  decorative?: boolean
+  fit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down'
+  position?: string
+  /** A CSS colour or `url(...)`, from `image()`. Painted under the picture. */
+  placeholder?: string
+  class?: string
+  style?: string
+}
+
+const props = defineProps<ImageProps>()
+
+if (!props.decorative && !props.alt?.trim())
+  throw new TypeError('Image alt text is required unless decorative is true')
+
+const src = props.src || ''
+const alt = props.decorative ? '' : props.alt || ''
+const width = props.width || ''
+const height = props.height || ''
+const ratio = props.aspectRatio || (width && height ? `${width} / ${height}` : '')
+const srcset = props.srcset || ''
+
+/*
+ * `sizes` is only meaningful next to a width-descriptor srcset, and a wrong
+ * one is invisible: the browser resolves it before layout, so a tile that is a
+ * quarter of the screen quietly downloads the full-width variant on every
+ * visit. Defaulting it to 100vw — which is what the framework component does —
+ * is that bug by default, so it is left empty unless a caller says otherwise.
+ */
+const sizes = props.sizes || ''
+const sources = props.sources || []
+
+/*
+ * `priority` is the whole LCP story in one prop: the one image above the fold
+ * loads eagerly and at high priority, everything else waits until it is near
+ * the viewport.
+ */
+const loading = props.priority ? 'eager' : props.loading || 'lazy'
+const decoding = props.decoding || 'async'
+const fetchpriority = props.priority ? 'high' : props.fetchpriority || 'auto'
+
+const fit = props.fit || 'cover'
+const position = props.position || 'center'
+const placeholder = props.placeholder || ''
+const className = props.class || ''
+
+/*
+ * Structural styles inline, for the reason in the note at the top. The
+ * placeholder is scaled to cover and centred so it lines up with the
+ * photograph that lands on top of it.
+ */
+const frameStyle = [
+  'position: relative',
+  'display: block',
+  'overflow: hidden',
+  ratio ? `aspect-ratio: ${ratio}` : '',
+  placeholder ? `background: ${placeholder} center / cover no-repeat` : '',
+  props.style || '',
+].filter(Boolean).join('; ')
+
+const imageStyle = [
+  'display: block',
+  'width: 100%',
+  'height: 100%',
+  `object-fit: ${fit}`,
+  `object-position: ${position}`,
+].join('; ')
+</script>
+
+<picture class="{{ className }}" style="{{ frameStyle }}">
+  @foreach (sources as source)
+    <source
+      type="{{ source.type }}"
+      srcset="{{ source.srcset }}"
+      @if(source.media) media="{{ source.media }}" @endif
+      @if(sizes) sizes="{{ sizes }}" @endif
+    >
+  @endforeach
+  <img
+    src="{{ src }}"
+    alt="{{ alt }}"
+    @if(width) width="{{ width }}" @endif
+    @if(height) height="{{ height }}" @endif
+    @if(srcset) srcset="{{ srcset }}" @endif
+    @if(sizes) sizes="{{ sizes }}" @endif
+    loading="{{ loading }}"
+    decoding="{{ decoding }}"
+    fetchpriority="{{ fetchpriority }}"
+    @if(props.decorative) aria-hidden="true" @endif
+    style="{{ imageStyle }}"
+  >
+</picture>

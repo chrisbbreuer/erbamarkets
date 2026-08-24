@@ -14,6 +14,10 @@ declare global {
   const decrement: typeof autoImports.decrement
   const reset: typeof autoImports.reset
   const count: typeof autoImports.count
+  const image: typeof autoImports.image
+  const imageTone: typeof autoImports.imageTone
+  const placeholderFor: typeof autoImports.placeholderFor
+  const SIZES: typeof autoImports.SIZES
   const loadStores: typeof autoImports.loadStores
   const loadCatalog: typeof autoImports.loadCatalog
   const loadSpecials: typeof autoImports.loadSpecials
