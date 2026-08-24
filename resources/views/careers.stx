@@ -180,8 +180,16 @@ async function sendApplication() {
               <div class="field">
                 <label for="apply-availability">Availability</label>
                 <select id="apply-availability" x-model="applyAvailability">
-                  @foreach (availability as slot)
-                    <option value="{{ slot }}">{{ slot }}</option>
+                  {{--
+                    `shift`, not `slot`. `slot` is stx's own name for the
+                    content a layout yields, so `{{ slot }}` inside the loop
+                    resolved to the whole rendered page rather than to the
+                    string being iterated - once per option, twice per
+                    iteration, which is how one 12KB page became 300KB of
+                    itself nested eleven deep.
+                  --}}
+                  @foreach (availability as shift)
+                    <option value="{{ shift }}">{{ shift }}</option>
                   @endforeach
                 </select>
               </div>
