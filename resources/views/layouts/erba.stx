@@ -429,9 +429,28 @@
       .nav-links::-webkit-scrollbar { display: none; }
       .nav-links a { color: var(--muted); white-space: nowrap; transition: color 0.18s var(--ease); }
       .nav-links a:hover { color: var(--paper); }
-      .nav-links { order: 3; flex: 1 0 100%; padding-bottom: 0.15rem; }
+      .nav-links { order: 3; flex: 1 0 100%; }
+      /*
+       * The row is wider than a phone by design and scrolls, but nothing said
+       * so: it ended at the screen edge mid-word, which reads as text that has
+       * been cut off rather than as a list that continues. A short fade on
+       * each edge is the whole affordance.
+       *
+       * And the links were 18px tall — a line of text, and nothing else, as
+       * the tap target for the primary navigation of a storefront whose
+       * traffic is almost entirely phones. Padding takes them to 44px, which
+       * is the smallest thing a thumb can be asked to hit. The row pulls the
+       * same amount back out of the header so the bar does not grow by it.
+       */
+      .nav-links a { display: inline-flex; align-items: center; padding-block: 0.8rem; }
+      .nav-links {
+        margin-block: -0.65rem;
+        -webkit-mask-image: linear-gradient(to right, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
+        mask-image: linear-gradient(to right, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent);
+      }
       @media (min-width: 1024px) {
-        .nav-links { order: 0; flex: 0 1 auto; gap: 2rem; overflow: visible; padding-bottom: 0; font-size: 0.78rem; letter-spacing: 0.16em; }
+        .nav-links { order: 0; flex: 0 1 auto; gap: 2rem; overflow: visible; margin-block: 0; font-size: 0.78rem; letter-spacing: 0.16em; -webkit-mask-image: none; mask-image: none; }
+        .nav-links a { padding-block: 0; }
       }
 
       /*
@@ -1425,12 +1444,22 @@
       .footer-grid { display: grid; gap: 2.75rem; }
       @media (min-width: 800px) { .footer-grid { grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 3rem; } }
       .footer h3 { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
-      .footer ul { margin: 1.1rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; font-size: 0.9rem; }
+      .footer ul { margin: 1.1rem 0 0; padding: 0; list-style: none; display: grid; font-size: 0.9rem; }
+      /* Padding rather than grid gap, so the space between two footer links
+         belongs to one of them and a thumb landing in it hits something. At
+         a 19px line that was nine pixels of nothing between every pair. */
+      .footer ul a { display: inline-block; padding-block: 0.42rem; }
       .footer ul a:hover { color: var(--acid); }
-      .footer-hours { margin-top: 1.1rem; font-size: 0.85rem; color: var(--muted); display: grid; gap: 0.35rem; }
+      .footer-hours { margin-top: 1.1rem; font-size: 0.85rem; color: var(--muted); display: grid; gap: 0.5rem; }
+      /* The phone number is the most-tapped thing in a dispensary's footer and
+         it was an 18px line of text. It is not a 44px target even now — it
+         sits in a run of prose and cannot become a block — but 29px with real
+         space around it is a number a thumb can hit. */
+      .footer-hours a, .store-address a { display: inline-block; padding-block: 0.35rem; }
       .footer-legal { margin-top: 3.5rem; padding-top: 2rem; border-top: 1px solid var(--faint); display: grid; gap: 1.25rem; font-size: 0.76rem; color: var(--muted); }
       @media (min-width: 900px) { .footer-legal { grid-template-columns: 2fr 1fr; align-items: start; gap: 3rem; } }
       .footer-social { display: flex; gap: 1.25rem; font-size: 0.76rem; letter-spacing: 0.14em; text-transform: uppercase; }
+      .footer-social a { display: inline-flex; align-items: center; min-height: 2.75rem; }
       .footer-stores { margin-top: 3.5rem; padding-top: 2.5rem; border-top: 1px solid var(--faint); display: grid; gap: 2.5rem; }
       @media (min-width: 700px) { .footer-stores { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3rem; } }
       .footer-store .footer-hours { margin-top: 0.9rem; }
