@@ -23,6 +23,7 @@
  * only ways to get here are the nav, the footer and the old /erba-sawtelle
  * redirects - all of which point at rooms that exist.
  */
+import { image, SIZES } from '../../functions/images'
 import { loadSiteModel } from '../../functions/site'
 
 const { stores, sawtelle, westla, products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
@@ -38,6 +39,8 @@ if (!foundStore)
 
 const store = foundStore || stores[0]
 const otherStore = stores.find(row => row.slug !== store.slug) || null
+
+const storePhoto = image(store.image, SIZES.hero)
 
 const pageTitle = foundStore
   ? `${store.name} - ${store.addressLine}, Los Angeles`
@@ -119,7 +122,16 @@ const bagCount = state(0)
           </div>
 
           <figure class="hero-figure rise rise-2">
-            <img src="{{ store.image }}" alt="{{ store.name }}" width="1600" height="1067" fetchpriority="high" decoding="async">
+            <Photo
+              src="{{ storePhoto.src }}"
+              srcset="{{ storePhoto.srcset }}"
+              sizes="{{ storePhoto.sizes }}"
+              width="{{ storePhoto.width }}"
+              height="{{ storePhoto.height }}"
+              placeholder="{{ storePhoto.placeholder }}"
+              alt="{{ store.name }}"
+              priority
+            />
           </figure>
         </div>
       </section>

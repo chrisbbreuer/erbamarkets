@@ -19,6 +19,7 @@
  * headings the old site used, in sentence case rather than the all-caps slab
  * it was set in.
  */
+import { image, SIZES } from '../functions/images'
 import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Shopping should be experiential, not transactional. The idea behind ERBA, and how two rooms in West Los Angeles are put together.'
@@ -54,6 +55,9 @@ const chapters = [
     ],
   },
 ]
+
+const chapterCards = chapters.map(chapter => ({ ...chapter, photo: image(chapter.image, SIZES.story) }))
+const storeCards = stores.map(store => ({ ...store, photo: image(store.image, SIZES.storefront) }))
 </script>
 
 <script client>
@@ -79,7 +83,7 @@ const bagCount = state(0)
         </div>
       </section>
 
-      @foreach (chapters as chapter)
+      @foreach (chapterCards as chapter)
         <section class="section">
           <div class="shell story">
             <div class="reveal">
@@ -91,7 +95,15 @@ const bagCount = state(0)
               </div>
             </div>
             <figure class="story-figure reveal" style="margin-block: 0;">
-              <img src="{{ chapter.image }}" alt="{{ chapter.alt }}" width="1200" height="1600" loading="lazy" decoding="async">
+              <Photo
+                src="{{ chapter.photo.src }}"
+                srcset="{{ chapter.photo.srcset }}"
+                sizes="{{ chapter.photo.sizes }}"
+                width="{{ chapter.photo.width }}"
+                height="{{ chapter.photo.height }}"
+                placeholder="{{ chapter.photo.placeholder }}"
+                alt="{{ chapter.alt }}"
+              />
             </figure>
           </div>
         </section>
@@ -105,10 +117,18 @@ const bagCount = state(0)
           </div>
 
           <div class="stores">
-            @foreach (stores as store)
+            @foreach (storeCards as store)
               <article class="store reveal">
                 <div class="store-media">
-                  <img src="{{ store.image }}" alt="{{ store.name }}" width="1200" height="750" loading="lazy" decoding="async">
+                  <Photo
+                    src="{{ store.photo.src }}"
+                    srcset="{{ store.photo.srcset }}"
+                    sizes="{{ store.photo.sizes }}"
+                    width="{{ store.photo.width }}"
+                    height="{{ store.photo.height }}"
+                    placeholder="{{ store.photo.placeholder }}"
+                    alt="{{ store.name }}"
+                  />
                 </div>
                 <div class="store-body">
                   <h3>{{ store.name }}</h3>

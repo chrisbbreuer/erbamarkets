@@ -20,11 +20,14 @@
  *
  * Every number, address and email is read from the store rows.
  */
+import { image, SIZES } from '../functions/images'
 import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Call, email or write to ERBA Markets. Store and delivery numbers for both West Los Angeles rooms, and a form for everything else.'
 
 const { stores, sawtelle, westla, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
+
+const storeCards = stores.map(store => ({ ...store, photo: image(store.image, SIZES.storefront) }))
 
 const subjects = [
   'An order I have placed',
@@ -141,10 +144,18 @@ async function sendContact() {
       <section class="section">
         <div class="shell">
           <div class="stores">
-            @foreach (stores as store)
+            @foreach (storeCards as store)
               <article class="store reveal">
                 <div class="store-media">
-                  <img src="{{ store.image }}" alt="{{ store.name }}" width="1200" height="750" loading="lazy" decoding="async">
+                  <Photo
+                    src="{{ store.photo.src }}"
+                    srcset="{{ store.photo.srcset }}"
+                    sizes="{{ store.photo.sizes }}"
+                    width="{{ store.photo.width }}"
+                    height="{{ store.photo.height }}"
+                    placeholder="{{ store.photo.placeholder }}"
+                    alt="{{ store.name }}"
+                  />
                 </div>
                 <div class="store-body">
                   <h3>{{ store.name }}</h3>

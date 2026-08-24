@@ -22,6 +22,7 @@
  * not in the database is the $3 debit fee, which belongs to the customer's
  * bank rather than to us.
  */
+import { image, SIZES } from '../functions/images'
 import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'Free delivery across West Los Angeles with no service charge, plus curbside pickup. Hours, payment, timings and coverage.'
@@ -58,6 +59,8 @@ const facts = [
     image: '/images/erba/people.jpg',
   },
 ]
+
+const factCards = facts.map(fact => ({ ...fact, photo: fact.image ? image(fact.image, SIZES.fact) : null }))
 </script>
 
 <script client>
@@ -91,10 +94,21 @@ const bagCount = state(0)
       <section class="section">
         <div class="shell">
           <div class="bento">
-            @foreach (facts as fact)
+            @foreach (factCards as fact)
               <article class="fact reveal {{ fact.tone === 'accent' ? 'fact--accent' : '' }} {{ fact.tone === 'tint' ? 'fact--tint' : '' }} {{ fact.image ? 'fact--image on-media' : '' }}">
-                @if (fact.image)
-                  <img src="{{ fact.image }}" alt="" width="900" height="700" loading="lazy" decoding="async">
+                {{-- A bare <img>: see the note on the same tiles in index.stx. --}}
+                @if (fact.photo)
+                  <img
+                    src="{{ fact.photo.src }}"
+                    srcset="{{ fact.photo.srcset }}"
+                    sizes="{{ fact.photo.sizes }}"
+                    width="{{ fact.photo.width }}"
+                    height="{{ fact.photo.height }}"
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    decoding="async"
+                  >
                 @endif
                 <h3>{{ fact.title }}</h3>
                 <p>{{ fact.body }}</p>
