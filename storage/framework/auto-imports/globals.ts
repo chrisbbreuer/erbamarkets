@@ -22,6 +22,7 @@ declare global {
   const money: typeof autoImports.money
   const telHref: typeof autoImports.telHref
   const potency: typeof autoImports.potency
+  const potencyLabel: typeof autoImports.potencyLabel
   const resolveStoreSlug: typeof autoImports.resolveStoreSlug
   const emptyProductReviews: typeof autoImports.emptyProductReviews
   const STORE_COOKIE: typeof autoImports.STORE_COOKIE
