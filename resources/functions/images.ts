@@ -142,6 +142,62 @@ export function placeholderFor(src: string): string {
   return entry?.splat ? `url("${entry.splat}")` : ''
 }
 
+/**
+ * The same thing for photography we do not host.
+ *
+ * The menu's products come from Jane, who serve originals and ignore every
+ * resize parameter there is: one product shot is a 2509x2509 JPEG at 875KB,
+ * drawn in a card 150px wide. These point at `/img` instead, which fetches
+ * each one once, resizes it, and caches the WebP — the same photograph comes
+ * back at 12KB.
+ *
+ * Only hosts `routes/media.ts` will actually serve are rewritten; anything
+ * else is handed back untouched rather than pointed at a route that would
+ * refuse it. The two lists have to agree, and this is the one that fails
+ * safely if they drift.
+ */
+const PROXIED_HOSTS = ['product-assets.iheartjane.com', 'uploads.iheartjane.com']
+
+/** A subset of the widths `routes/media.ts` allows. Keep them in step. */
+export const REMOTE_WIDTHS = {
+  /** A menu or shelf card: 143px on a phone, 303px four-up on a desktop. */
+  card: [160, 240, 320, 480, 640],
+  /** The photograph on a product page, which is half the shell at most. */
+  detail: [320, 480, 640, 960],
+} as const
+
+export function remoteImage(src: string, sizes: string, widths: readonly number[] = REMOTE_WIDTHS.card): ImageAttrs {
+  const empty = { src: src || '', srcset: '', sizes: '', width: '', height: '', placeholder: '' }
+
+  if (!src || !PROXIED_HOSTS.some(host => src.includes(host)))
+    return empty
+
+  const at = (width: number) => `/img?src=${encodeURIComponent(src)}&w=${width}`
+
+  return {
+    ...empty,
+    // The middle of the ladder as `src`, not the widest: this is what a
+    // browser without `srcset` gets, and on this site that is far more likely
+    // to be a small screen than a large one.
+    src: at(320),
+    srcset: widths.map(width => `${at(width)} ${width}w`).join(', '),
+    sizes,
+  }
+}
+
+/**
+ * A product photograph, wherever it happens to live.
+ *
+ * The menu mixes two kinds: the seeded catalogue points at files we own and
+ * pre-built with `buddy images:build`, while the live import points at Jane.
+ * A card should not have to know which it got, and the answer differs — ours
+ * already have variants on disk and a placeholder computed, theirs have to go
+ * through the resizer. Anything that is neither is handed back untouched.
+ */
+export function productImage(src: string, sizes: string, widths: readonly number[] = REMOTE_WIDTHS.card): ImageAttrs {
+  return entries[src] ? image(src, sizes) : remoteImage(src, sizes, widths)
+}
+
 function widest(entry: ImageEntry): ImageVariant | undefined {
   return entry.variants[entry.variants.length - 1]
 }

@@ -20,7 +20,7 @@
  * The joins and the snake_case mapping live in resources/functions/site.ts,
  * because the header and footer on every other route need the same shapes.
  */
-import { image, SIZES } from '../functions/images'
+import { image, productImage, REMOTE_WIDTHS, SIZES } from '../functions/images'
 import { loadSiteModel } from '../functions/site'
 
 const siteUrl = 'https://www.erbamarkets.com'
@@ -44,6 +44,7 @@ const {
    Already ordered by is_featured, so this is the staff picks that have a
    photo, which is what the grid frame needs. */
 const featuredProducts = products.filter(product => product.image).slice(0, 8)
+  .map(product => ({ ...product, photo: productImage(product.image, SIZES.card, REMOTE_WIDTHS.card) }))
 
 /*
  * The photographs, resolved to their variant sets.
@@ -476,7 +477,16 @@ onMount(() => {
             @foreach (featuredProducts as product)
               <article class="card">
                 <div class="card-media">
-                  <img src="{{ product.image }}" alt="{{ product.name }} by {{ product.brand }}" width="900" height="1100" loading="lazy" decoding="async">
+                  <img
+                    src="{{ product.photo.src }}"
+                    srcset="{{ product.photo.srcset }}"
+                    sizes="{{ product.photo.sizes }}"
+                    alt="{{ product.name }} by {{ product.brand }}"
+                    width="900"
+                    height="1100"
+                    loading="lazy"
+                    decoding="async"
+                  >
                   <span class="card-strain on-media">{{ product.strain }}</span>
                 </div>
                 <p class="card-brand">{{ product.brand }} {{ product.brandLine }}</p>

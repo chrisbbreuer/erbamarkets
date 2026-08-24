@@ -22,6 +22,7 @@
  * page has already made five. Nothing else on the page needs the answer, so
  * nothing else has to carry it.
  */
+import { productImage, REMOTE_WIDTHS } from '../functions/images'
 import { loadStores, resolveStoreSlug } from '../functions/site'
 
 const switchStores = await loadStores()
@@ -38,6 +39,15 @@ const switchCurrentSlug = resolveStoreSlug(switchStores, {
 })
 
 const switchCurrent = switchStores.find(store => store.slug === switchCurrentSlug) || null
+
+/*
+ * The featured product's photograph, sized for the panel rather than the page.
+ * The tile is about 340px at its widest, and this was loading a 600px asset
+ * declared at 600x450 — or, on the live menu, a 2500px original.
+ */
+const featurePhoto = typeof navFeature !== 'undefined' && navFeature
+  ? productImage(navFeature.image, '(min-width: 1100px) 24vw, 46vw', REMOTE_WIDTHS.card)
+  : null
 
 /*
  * Where to return after choosing. Rebuilt from the path stx routed and the
@@ -160,7 +170,16 @@ const switchNext = (() => {
               <a class="mega-feature" href="/menu?category={{ navFeature.category }}">
                 <h3 class="sr-only">Featured</h3>
                 <div class="mega-feature-media">
-                  <img src="{{ navFeature.image }}" alt="{{ navFeature.name }}" width="600" height="450" loading="lazy" decoding="async">
+                  <img
+                    src="{{ featurePhoto.src }}"
+                    srcset="{{ featurePhoto.srcset }}"
+                    sizes="{{ featurePhoto.sizes }}"
+                    alt="{{ navFeature.name }}"
+                    width="600"
+                    height="450"
+                    loading="lazy"
+                    decoding="async"
+                  >
                 </div>
                 <div class="mega-feature-body">
                   <div>

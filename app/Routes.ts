@@ -17,6 +17,12 @@ export default {
   // rather than looking for a page.
   'web': 'web',
 
+  // The resizer for product photography we do not host, at /img. Root-mounted
+  // like `web` because it answers to the browser at the site origin, and
+  // listed under `proxy.prefixes` in config/server.ts so the views server
+  // forwards it here rather than looking for a page called "img".
+  'media': { path: 'media', prefix: '' },
+
   // Storefront: bag, checkout, VIP signup.
   'api': 'api',
 

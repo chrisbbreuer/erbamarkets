@@ -10,6 +10,7 @@
 
 @section('content')
 <script server>
+import { productImage, REMOTE_WIDTHS, SIZES } from '../../functions/images'
 /**
  * One product.
  *
@@ -48,6 +49,12 @@ const pageDescription = !found
 const sameCategory = products.filter(item => item.category === product.category && item.slug !== product.slug)
 const others = products.filter(item => item.category !== product.category && item.slug !== product.slug)
 const related = [...sameCategory, ...others].slice(0, 4)
+  .map(item => ({ ...item, photo: productImage(item.image, SIZES.card, REMOTE_WIDTHS.card) }))
+
+/* Half the shell on a desktop, full width on a phone — the detail ladder
+   rather than the card one, because this is the largest a product
+   photograph is ever shown. */
+const productPhoto = productImage(product.image, '(min-width: 900px) 46vw, 100vw', REMOTE_WIDTHS.detail)
 
 /* A 404 points at the menu; pointing it at some other product would tell a
    crawler this URL is that product. */
@@ -325,7 +332,16 @@ async function sendReview(productSlug) {
       <section class="section product-section">
         <div class="shell product">
           <figure class="product-figure">
-            <img src="{{ product.image }}" alt="{{ product.name }} by {{ product.brand }}" width="1200" height="1500" fetchpriority="high" decoding="async">
+            <img
+              src="{{ productPhoto.src }}"
+              srcset="{{ productPhoto.srcset }}"
+              sizes="{{ productPhoto.sizes }}"
+              alt="{{ product.name }} by {{ product.brand }}"
+              width="1200"
+              height="1500"
+              fetchpriority="high"
+              decoding="async"
+            >
           </figure>
 
           <div class="product-body">
@@ -577,7 +593,16 @@ async function sendReview(productSlug) {
               @foreach (related as item)
                 <a class="card" href="/products/{{ item.slug }}">
                   <div class="card-media">
-                    <img src="{{ item.image }}" alt="{{ item.name }} by {{ item.brand }}" width="900" height="1100" loading="lazy" decoding="async">
+                    <img
+                      src="{{ item.photo.src }}"
+                      srcset="{{ item.photo.srcset }}"
+                      sizes="{{ item.photo.sizes }}"
+                      alt="{{ item.name }} by {{ item.brand }}"
+                      width="900"
+                      height="1100"
+                      loading="lazy"
+                      decoding="async"
+                    >
                     @if (item.strain)
                       <span class="card-strain on-media">{{ item.strain }}</span>
                     @endif

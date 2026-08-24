@@ -22,6 +22,7 @@
  * from a fixed list, so the menu can never offer a filter that matches
  * nothing.
  */
+import { productImage, REMOTE_WIDTHS, SIZES } from '../functions/images'
 import { loadSiteModel } from '../functions/site'
 
 const pageDescription = 'The full ERBA Markets menu: flower, pre-rolls, cartridges, edibles, concentrates and wellness, with live prices and potency.'
@@ -50,6 +51,15 @@ const navDeliveryMinimum = site.navDeliveryMinimum
 
 const categories = site.categories
 const products = site.products
+
+/*
+ * The photographs, pointed at the resizer.
+ *
+ * Done once here rather than per attribute in the loop: six hundred cards
+ * times five srcset entries is three thousand URL encodings either way, but
+ * this way it happens once per card instead of once per `{{ }}`.
+ */
+const productCards = products.map(product => ({ ...product, photo: productImage(product.image, SIZES.card, REMOTE_WIDTHS.card) }))
 
 /* Filter options, derived from stock rather than declared. */
 const strains = [...new Set(products.map(product => product.strain).filter(Boolean))].sort()
@@ -366,7 +376,7 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
           so the whole catalog stays in the HTML for search engines.
         -->
         <div class="grid menu-grid" :hidden="view() !== 'grid'">
-          @foreach (products as product)
+          @foreach (productCards as product)
             {{--
               An anchor, not an article with a click handler: a card that
               navigates should be openable in a new tab, followable by a
@@ -380,7 +390,24 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
               :hidden="!shows('{{ product.id }}', '{{ product.category }}', {{ brandJson(product.brand) }}, '{{ product.strain }}')"
             >
               <div class="card-media">
-                <img src="{{ product.image }}" alt="{{ product.name }}" width="600" height="750" loading="lazy" decoding="async">
+                {{--
+                  A bare <img>: `.card-media` owns the box (4/5, overflow
+                  hidden) and holds the space on its own, and `.card-strain`
+                  is absolutely positioned against it — a <picture> wrapper
+                  would become the ancestor that chip resolves against. The
+                  card is here for the srcset, which is the whole point: these
+                  used to be 2509px originals in a 150px box.
+                --}}
+                <img
+                  src="{{ product.photo.src }}"
+                  srcset="{{ product.photo.srcset }}"
+                  sizes="{{ product.photo.sizes }}"
+                  alt="{{ product.name }}"
+                  width="600"
+                  height="750"
+                  loading="lazy"
+                  decoding="async"
+                >
                 @if (product.strain)
                   <span class="card-strain on-media">{{ product.strain }}</span>
                 @endif

@@ -23,7 +23,7 @@
  * only ways to get here are the nav, the footer and the old /erba-sawtelle
  * redirects - all of which point at rooms that exist.
  */
-import { image, SIZES } from '../../functions/images'
+import { image, productImage, REMOTE_WIDTHS, SIZES } from '../../functions/images'
 import { loadSiteModel } from '../../functions/site'
 
 const { stores, sawtelle, westla, products, navCategories, navBrands, navFeature, navProductCount, navDeliveryMinimum } = await loadSiteModel({ cookies: typeof cookies !== 'undefined' ? cookies : {}, query: typeof query !== 'undefined' ? query : {} })
@@ -56,6 +56,7 @@ const tourUrl = scans[store.slug] ? `https://my.matterport.com/show/?m=${scans[s
 
 /* A handful of what is on the shelf, as a reason to keep scrolling. */
 const shelf = products.filter(product => product.image).slice(0, 4)
+  .map(product => ({ ...product, photo: productImage(product.image, SIZES.card, REMOTE_WIDTHS.card) }))
 
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
@@ -211,7 +212,16 @@ const bagCount = state(0)
             @foreach (shelf as product)
               <article class="card">
                 <div class="card-media">
-                  <img src="{{ product.image }}" alt="{{ product.name }} by {{ product.brand }}" width="900" height="1100" loading="lazy" decoding="async">
+                  <img
+                    src="{{ product.photo.src }}"
+                    srcset="{{ product.photo.srcset }}"
+                    sizes="{{ product.photo.sizes }}"
+                    alt="{{ product.name }} by {{ product.brand }}"
+                    width="900"
+                    height="1100"
+                    loading="lazy"
+                    decoding="async"
+                  >
                   <span class="card-strain on-media">{{ product.strain }}</span>
                 </div>
                 <p class="card-brand">{{ product.brand }}</p>

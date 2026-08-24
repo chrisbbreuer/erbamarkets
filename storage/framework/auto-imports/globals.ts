@@ -17,7 +17,10 @@ declare global {
   const image: typeof autoImports.image
   const imageTone: typeof autoImports.imageTone
   const placeholderFor: typeof autoImports.placeholderFor
+  const remoteImage: typeof autoImports.remoteImage
+  const productImage: typeof autoImports.productImage
   const SIZES: typeof autoImports.SIZES
+  const REMOTE_WIDTHS: typeof autoImports.REMOTE_WIDTHS
   const loadStores: typeof autoImports.loadStores
   const loadCatalog: typeof autoImports.loadCatalog
   const loadSpecials: typeof autoImports.loadSpecials

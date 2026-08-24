@@ -20,7 +20,9 @@ export default {
     // The store switcher is a parameterised path, so it needs a prefix rather
     // than an exact entry. Singular `/store/`; the public location pages are
     // `/stores/{slug}` and stay with the page router.
-    prefixes: ['/store/'],
+    // `/img/` too: the image resizer answers at the site origin, and without
+    // this the views server looks for a page called "img" and 404s.
+    prefixes: ['/store/', '/img'],
     paths: ['/sitemap.xml', '/robots.txt'],
   },
 
