@@ -1338,7 +1338,15 @@
       @media (min-width: 1024px) { .story-figure { margin-top: 5rem; } }
 
       /* ---------- locations ---------- */
-      .stores { margin-top: 3.5rem; display: grid; gap: 1px; background: var(--faint); border: 1px solid var(--faint); }
+      /*
+       * `minmax(0, 1fr)`, not the implicit `auto` column a bare `display:
+       * grid` gets. `auto` is max-content, so the widest unbreakable thing in
+       * any card sets the width of the column and the column sets the width
+       * of the page: a delivery email address made the store cards 371px
+       * inside a 342px shell, and /delivery scrolled sideways on a phone. The
+       * bento beside it already says this; the store list had been left out.
+       */
+      .stores { margin-top: 3.5rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; background: var(--faint); border: 1px solid var(--faint); }
       @media (min-width: 900px) { .stores { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .store { background: var(--ink); }
       .store-media { aspect-ratio: 16 / 10; overflow: hidden; }
@@ -1350,7 +1358,11 @@
       .store-rows { margin-top: 1.75rem; display: grid; gap: 0.85rem; }
       .store-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1.5rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--faint); }
       .store-row dt { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
-      .store-row dd { margin: 0; font-size: 0.95rem; text-align: right; }
+      /* And the address itself has to be allowed to break. Constraining the
+         column alone would have moved the overflow one level down rather than
+         removing it: an email is one word as far as line breaking is
+         concerned. */
+      .store-row dd { margin: 0; min-width: 0; font-size: 0.95rem; text-align: right; overflow-wrap: anywhere; }
       .store-tags { margin-top: 1.75rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
       .tag { padding: 0.3rem 0.75rem; border: 1px solid var(--faint-strong); border-radius: 999px; font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
       .store-actions { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.6rem; }
