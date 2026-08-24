@@ -109,6 +109,7 @@ export interface ProductView {
   thc: string
   thcValue: number
   cbd: string
+  potencyLabel: string
   image: string
   rating: string
   reviews: number
@@ -195,6 +196,20 @@ export function potency(value: unknown, category: string): string {
     // Milligrams are whole numbers on a label; nobody prints 100.0mg.
     ? `${Number.isInteger(amount) ? amount : amount.toFixed(1)}mg`
     : `${amount.toFixed(1)}%`
+}
+
+/**
+ * The potency line as a card prints it, or nothing at all.
+ *
+ * `potency` returns an empty string for a product with no lab figure, and the
+ * three views that showed it each interpolated the value into their own
+ * template around it. The menu rendered " THC" and the homepage and store
+ * pages rendered "THC  · CBD " — a label with nothing to label, on every
+ * product whose supplier had not sent numbers. Composing it here also settles
+ * which way round it reads, which the three of them had disagreed about.
+ */
+export function potencyLabel(thc: string, cbd: string): string {
+  return [thc && `${thc} THC`, cbd && `${cbd} CBD`].filter(Boolean).join(' · ')
 }
 
 /** JSON columns come back as text from SQLite and as arrays from Postgres. */
@@ -331,6 +346,9 @@ export async function loadCatalog(storeSlug = ''): Promise<{
     const priceCents = here ? here.price : row.price
     const compareAt = here ? here.compare_at_price : row.compare_at_price
 
+    const thcLabel = potency(row.thc_percentage, category)
+    const cbdLabel = potency(row.cbd_percentage, category)
+
     return {
       id: row.id,
       name: row.name,
@@ -345,11 +363,12 @@ export async function loadCatalog(storeSlug = ''): Promise<{
       priceCents,
       price: money(priceCents),
       wasPrice: compareAt > 0 ? money(compareAt) : '',
-      thc: potency(row.thc_percentage, category),
+      thc: thcLabel,
       // Numeric and unformatted: the menu sorts on this, and sorting has to
       // stay within a category to mean anything anyway.
       thcValue: Number(row.thc_percentage || 0),
-      cbd: potency(row.cbd_percentage, category),
+      cbd: cbdLabel,
+      potencyLabel: potencyLabel(thcLabel, cbdLabel),
       image: row.image_url || '',
       rating: row.rating ? Number(row.rating).toFixed(1) : '',
       reviews: Number(row.review_count || 0),

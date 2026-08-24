@@ -396,7 +396,9 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
               @if (product.ratingLabel)
                 <p class="card-rating mono"><span class="star star--on" aria-hidden="true">&#9733;</span> {{ product.ratingLabel }} <span class="card-rating-count">{{ product.reviewsLabel }}</span></p>
               @endif
-              <p class="card-potency mono">{{ product.thc }} THC{{ product.cbd ? ' · ' + product.cbd + ' CBD' : '' }}</p>
+              @if (product.potencyLabel)
+                <p class="card-potency mono">{{ product.potencyLabel }}</p>
+              @endif
               <div class="card-foot">
                 <p class="card-price mono">
                   <s :if="product.wasPrice">{{ product.wasPrice }}</s>{{ product.price }}

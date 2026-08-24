@@ -454,7 +454,9 @@ onMount(() => {
                 </div>
                 <p class="card-brand">{{ product.brand }} {{ product.brandLine }}</p>
                 <h3>{{ product.name }}</h3>
-                <p class="card-potency mono">THC {{ product.thc }} &middot; CBD {{ product.cbd }}</p>
+                @if (product.potencyLabel)
+                  <p class="card-potency mono">{{ product.potencyLabel }}</p>
+                @endif
                 <div class="card-foot">
                   <p class="card-price mono">
                     @if (product.wasPrice)

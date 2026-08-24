@@ -1383,7 +1383,26 @@
         color: var(--acid);
       }
       .card-brand { margin-top: 0.85rem; font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
-      .card h3 { margin-top: 0.35rem; font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
+      /*
+       * Three lines, then an ellipsis.
+       *
+       * Supplier names run long — "1:1 CBD:THC [15ml] (225mg CBD/225mg THC)"
+       * is four lines in a 150px column, and one card ends up twice the
+       * height of the one beside it. The part that identifies the product is
+       * the front of the string; the parenthesised dosage after it is already
+       * on the potency line below, and all of it is on the product page.
+       */
+      .card h3 {
+        margin-top: 0.35rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+      }
       .card-potency { margin-top: 0.55rem; font-size: 0.7rem; color: var(--muted); }
       /* Wraps rather than squeezing: at two-up the price and the stock note
          do not both fit on one 150px line, and a squeezed row is what breaks

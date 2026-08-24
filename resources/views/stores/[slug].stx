@@ -204,7 +204,9 @@ const bagCount = state(0)
                 </div>
                 <p class="card-brand">{{ product.brand }}</p>
                 <h3>{{ product.name }}</h3>
-                <p class="card-potency mono">THC {{ product.thc }} &middot; CBD {{ product.cbd }}</p>
+                @if (product.potencyLabel)
+                  <p class="card-potency mono">{{ product.potencyLabel }}</p>
+                @endif
                 <div class="card-foot">
                   <p class="card-price mono">{{ product.price }}<span class="card-unit"> / {{ product.unit }}</span></p>
                   <a href="/menu" class="btn btn-ghost btn-small">View</a>
