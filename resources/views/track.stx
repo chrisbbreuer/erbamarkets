@@ -304,7 +304,16 @@ onUnmounted(() => {
 
     <header class="nav">
       <div class="nav-inner">
-        <a href="/" class="wordmark">Erba</a>
+        {{--
+          The lockup, the same one every other page carries. This said "Erba"
+          in body type, which is not the mark — and `.wordmark` paints the
+          logo plate behind whatever is inside it, so on the light theme the
+          word was near-black type on a near-black plate and vanished
+          entirely.
+        --}}
+        <a href="/" class="wordmark" aria-label="ERBA Markets, home">
+          <img src="/images/erba-logo.png" alt="ERBA Markets" width="1500" height="732" fetchpriority="high" decoding="async">
+        </a>
         <div class="nav-actions">
           <a href="/#menu" class="btn btn-ghost btn-small">Order again</a>
         </div>

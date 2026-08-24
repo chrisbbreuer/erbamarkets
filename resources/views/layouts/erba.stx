@@ -97,13 +97,22 @@
 
         /*
          * The acid green is darkened for light mode. #a8d84a on paper is about
-         * 1.6:1, which is unreadable as text; this holds the same hue at a
-         * contrast that passes for both body copy and button fills.
+         * 1.6:1, which is unreadable as text.
+         *
+         * The first darkening did not go far enough: #4f7d0e is 4.39:1 on the
+         * page and 3.94:1 on a sunken panel, so every eyebrow, every rating
+         * star and the footer's email address sat just under AA on exactly
+         * the surfaces they are used on. #456d00 clears it everywhere —
+         * 5.45 on paper, 4.89 sunken, 6.10 for white type on the fill — at
+         * the same hue.
+         *
+         * --acid-hover was the worse of the two: white on #5f9412 is 3.66:1,
+         * so a primary button *lost* contrast when you pointed at it.
          */
-        --acid: #4f7d0e;
-        --acid-rgb: 79 125 14;
+        --acid: #456d00;
+        --acid-rgb: 69 109 0;
         --acid-dim: #3f6609;
-        --acid-hover: #5f9412;
+        --acid-hover: #4e7a08;
         --on-acid: #ffffff;
         --on-acid-rgb: 255 255 255;
 
@@ -1286,7 +1295,10 @@
         font-weight: 700;
         letter-spacing: 0.24em;
         text-transform: uppercase;
-        color: rgb(var(--paper-rgb) / 0.45);
+        /* 0.62, not 0.45. These are the names of the brands we stock, not a
+           texture: at 0.45 they were 2.96:1 on paper and 4.15:1 in the dark,
+           under AA in both rooms. */
+        color: rgb(var(--paper-rgb) / 0.62);
         white-space: nowrap;
       }
       @keyframes brand-pan { to { transform: translateX(-50%); } }
@@ -1482,7 +1494,9 @@
       .fact h3 { font-size: 1.25rem; text-transform: uppercase; }
       .fact p { margin-top: 0.9rem; color: var(--muted); }
       .fact--accent { background: var(--acid); color: var(--on-acid); }
-      .fact--accent p { color: rgb(var(--on-acid-rgb) / 0.74); }
+      /* 0.85, not 0.74: white at 0.74 over the light theme's green is 4.16:1,
+         and this is body copy. */
+      .fact--accent p { color: rgb(var(--on-acid-rgb) / 0.85); }
       .fact--tint { background: var(--ink-raised); }
       .fact--image { position: relative; overflow: hidden; justify-content: flex-end; }
       .fact--image::after {
