@@ -259,11 +259,24 @@ async function callBag(path, payload) {
   }
 }
 
+/**
+ * A bag line's thumbnail, at the size a bag line shows it.
+ *
+ * 64 by 80, and without this the drawer asks Jane for the original — one of
+ * those is 875KB. The same `/img` route the menu cards use, at the narrowest
+ * rung on its ladder. Anything we host already comes back small, and anything
+ * the route would refuse is left alone.
+ */
+function bagThumb(src) {
+  const proxied = typeof src === 'string' && src.includes('iheartjane.com')
+  return proxied ? `/img?src=${encodeURIComponent(src)}&w=160` : src
+}
+
 function applyBag(bag) {
   if (!bag)
     return
 
-  bagItems.set(bag.items || [])
+  bagItems.set((bag.items || []).map(item => ({ ...item, image: bagThumb(item.image) })))
   bagCount.set(bag.count || 0)
   bagSubtotalCents.set(bag.subtotal || 0)
   bagSubtotal.set(dollars(bag.subtotal || 0))
