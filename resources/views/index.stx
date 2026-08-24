@@ -20,6 +20,7 @@
  * The joins and the snake_case mapping live in resources/functions/site.ts,
  * because the header and footer on every other route need the same shapes.
  */
+import { image, SIZES } from '../functions/images'
 import { loadSiteModel } from '../functions/site'
 
 const siteUrl = 'https://www.erbamarkets.com'
@@ -43,6 +44,18 @@ const {
    Already ordered by is_featured, so this is the staff picks that have a
    photo, which is what the grid frame needs. */
 const featuredProducts = products.filter(product => product.image).slice(0, 8)
+
+/*
+ * The photographs, resolved to their variant sets.
+ *
+ * `image()` is called here rather than in the template because a `@foreach`
+ * over stores or facts would otherwise call it once per attribute — six times
+ * per card — to build the same six strings. Attaching the result to the row
+ * keeps the loop reading like markup.
+ */
+const heroPhoto = image('/images/erba/hero-inside.jpg', SIZES.hero)
+const storyPhoto = image('/images/erba/indoor-tree.jpg', SIZES.story)
+const storeCards = stores.map(store => ({ ...store, photo: image(store.image, SIZES.storefront) }))
 
 /**
  * How long one lap of the brand marquee takes.
@@ -94,6 +107,11 @@ const deliveryFacts = [
     image: '/images/erba/people.jpg',
   },
 ]
+
+/* Below `deliveryFacts`, not beside the other photo sets above it: a `const`
+   read before its own declaration throws, and a throw in a server script takes
+   the whole page's data with it rather than just this line. */
+const factCards = deliveryFacts.map(fact => ({ ...fact, photo: fact.image ? image(fact.image, SIZES.fact) : null }))
 
 const faqs = [
   { q: 'What identification do you accept?', a: 'Any valid, non-expired government issued ID showing you are 21 or older.' },
@@ -410,7 +428,16 @@ onMount(() => {
           </div>
 
           <figure class="hero-figure rise rise-2">
-            <img src="/images/erba/hero-inside.jpg" alt="Inside the ERBA dispensary on Sawtelle" width="1600" height="1067" fetchpriority="high" decoding="async">
+            <Photo
+              src="{{ heroPhoto.src }}"
+              srcset="{{ heroPhoto.srcset }}"
+              sizes="{{ heroPhoto.sizes }}"
+              width="{{ heroPhoto.width }}"
+              height="{{ heroPhoto.height }}"
+              placeholder="{{ heroPhoto.placeholder }}"
+              alt="Inside the ERBA dispensary on Sawtelle"
+              priority
+            />
           </figure>
         </div>
       </section>
@@ -513,7 +540,15 @@ onMount(() => {
             </div>
           </div>
           <figure class="story-figure reveal" style="margin-block: 0;">
-            <img src="/images/erba/indoor-tree.jpg" alt="The indoor tree at the centre of the Sawtelle room" width="1200" height="1600" loading="lazy" decoding="async">
+            <Photo
+              src="{{ storyPhoto.src }}"
+              srcset="{{ storyPhoto.srcset }}"
+              sizes="{{ storyPhoto.sizes }}"
+              width="{{ storyPhoto.width }}"
+              height="{{ storyPhoto.height }}"
+              placeholder="{{ storyPhoto.placeholder }}"
+              alt="The indoor tree at the centre of the Sawtelle room"
+            />
           </figure>
         </div>
       </section>
@@ -525,10 +560,18 @@ onMount(() => {
           </div>
 
           <div class="stores">
-            @foreach (stores as store)
+            @foreach (storeCards as store)
               <article class="store reveal">
                 <div class="store-media">
-                  <img src="{{ store.image }}" alt="{{ store.name }}" width="1200" height="750" loading="lazy" decoding="async">
+                  <Photo
+                    src="{{ store.photo.src }}"
+                    srcset="{{ store.photo.srcset }}"
+                    sizes="{{ store.photo.sizes }}"
+                    width="{{ store.photo.width }}"
+                    height="{{ store.photo.height }}"
+                    placeholder="{{ store.photo.placeholder }}"
+                    alt="{{ store.name }}"
+                  />
                 </div>
                 <div class="store-body">
                   <h3>{{ store.name }}</h3>
@@ -568,10 +611,30 @@ onMount(() => {
           </div>
 
           <div class="bento">
-            @foreach (deliveryFacts as fact)
+            @foreach (factCards as fact)
               <article class="fact reveal {{ fact.tone === 'accent' ? 'fact--accent' : '' }} {{ fact.tone === 'tint' ? 'fact--tint' : '' }} {{ fact.image ? 'fact--image on-media' : '' }}">
-                @if (fact.image)
-                  <img src="{{ fact.image }}" alt="" width="900" height="700" loading="lazy" decoding="async">
+                {{--
+                  A bare <img>, not a <Photo>. `.fact--image img` is
+                  `position: absolute; inset: 0` — the page lays this image out
+                  itself, as a backdrop behind the copy — and a <picture>
+                  wrapper becomes the positioned ancestor that `inset` then
+                  resolves against, so the photograph collapses into a strip at
+                  the top of the tile. It still gets the ladder, which is the
+                  part that mattered; a blur placeholder behind something
+                  already dimmed to a third of its brightness would not show.
+                --}}
+                @if (fact.photo)
+                  <img
+                    src="{{ fact.photo.src }}"
+                    srcset="{{ fact.photo.srcset }}"
+                    sizes="{{ fact.photo.sizes }}"
+                    width="{{ fact.photo.width }}"
+                    height="{{ fact.photo.height }}"
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    decoding="async"
+                  >
                 @endif
                 <h3>{{ fact.title }}</h3>
                 <p>{{ fact.body }}</p>

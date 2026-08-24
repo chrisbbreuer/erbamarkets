@@ -312,7 +312,16 @@ onUnmounted(() => {
           entirely.
         --}}
         <a href="/" class="wordmark" aria-label="ERBA Markets, home">
-          <img src="/images/erba-logo.png" alt="ERBA Markets" width="1500" height="732" fetchpriority="high" decoding="async">
+          <img
+            src="/images/opt/erba-logo-200.webp"
+            srcset="/images/opt/erba-logo-200.webp 200w, /images/opt/erba-logo-340.webp 340w"
+            sizes="110px"
+            alt="ERBA Markets"
+            width="1500"
+            height="732"
+            fetchpriority="high"
+            decoding="async"
+          >
         </a>
         <div class="nav-actions">
           <a href="/#menu" class="btn btn-ghost btn-small">Order again</a>

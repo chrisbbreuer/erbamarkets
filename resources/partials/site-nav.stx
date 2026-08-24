@@ -57,7 +57,23 @@ const switchNext = (() => {
 <header class="nav">
   <div class="nav-inner">
     <a href="/" class="wordmark" aria-label="ERBA Markets, home">
-      <img src="/images/erba-logo.png" alt="ERBA Markets" width="1500" height="732" fetchpriority="high" decoding="async">
+      {{--
+        Not a <Photo>: the wordmark is sized by CSS height rather than by its
+        container, so the component's `width: 100%` layout would fight it. It
+        still wants the ladder, though — this box is 98px wide at its largest
+        and the PNG behind it is 1500px and 54KB. The 200w variant is 6KB and
+        covers every display up to 2x; 340w is there for 3x.
+      --}}
+      <img
+        src="/images/opt/erba-logo-200.webp"
+        srcset="/images/opt/erba-logo-200.webp 200w, /images/opt/erba-logo-340.webp 340w"
+        sizes="110px"
+        alt="ERBA Markets"
+        width="1500"
+        height="732"
+        fetchpriority="high"
+        decoding="async"
+      >
     </a>
 
     <nav class="nav-links" aria-label="Primary">

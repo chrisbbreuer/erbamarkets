@@ -9,16 +9,23 @@
  * `image()` answers with the whole set instead - the variants `buddy
  * images:build` wrote, the intrinsic dimensions, and a placeholder to hold the
  * space while the real file is still arriving. A view passes the original path
- * it always used and gets the rest for free:
+ * it always used and names the shape of the slot it goes in:
  *
- *   <Image {...image('/images/erba/hero-inside.jpg', HERO_SIZES)} alt="…" />
+ *   const hero = image('/images/erba/hero-inside.jpg', SIZES.hero)
+ *
+ *   <Photo src="{{ hero.src }}" srcset="{{ hero.srcset }}" sizes="{{ hero.sizes }}"
+ *          width="{{ hero.width }}" height="{{ hero.height }}"
+ *          placeholder="{{ hero.placeholder }}" alt="…" priority />
+ *
+ * Spelled out rather than spread: stx has no object-spread in a tag, so the
+ * attributes are written once per call site and that is simply what it costs.
  *
  * A path with no manifest entry degrades to exactly what was there before: the
  * `src` it was given, no srcset, no placeholder. Nothing 404s because an image
  * was added and the build was not re-run.
  */
 
-import manifest from './image-manifest.json'
+import { IMAGE_MANIFEST } from './image-manifest'
 
 /**
  * A note on the sources, because it surprises everyone who looks.
@@ -56,7 +63,7 @@ export interface ImageAttrs {
   placeholder: string
 }
 
-const entries = manifest as unknown as Record<string, ImageEntry>
+const entries = IMAGE_MANIFEST
 
 /**
  * The `sizes` values the layout actually uses, named rather than repeated.
@@ -68,15 +75,17 @@ const entries = manifest as unknown as Record<string, ImageEntry>
  * others, instead of guessed at eleven call sites.
  */
 export const SIZES = {
-  /** Half the shell from 900px up, full width below it. The hero figure. */
-  half: '(min-width: 900px) 46vw, 100vw',
-  /** A third of the shell on a desktop: bento tiles and fact cards. */
-  third: '(min-width: 1100px) 30vw, (min-width: 700px) 46vw, 100vw',
-  /** Four across on a desktop, two on a phone. The product grid. */
-  quarter: '(min-width: 1024px) 23vw, 48vw',
-  /** Full bleed at every width: the story chapters and store photographs. */
-  full: '100vw',
-  /** The wordmark, which is 100px wide and never changes. */
+  /** The hero figure: 95vw on a phone, a little under half the shell above 1024. */
+  hero: '(min-width: 1024px) 45vw, 95vw',
+  /** A story chapter's photograph, which sits in the narrower of two columns. */
+  story: '(min-width: 1024px) 40vw, 95vw',
+  /** A storefront card. Two across from 900px, full width below it. */
+  storefront: '(min-width: 900px) 50vw, 90vw',
+  /** A delivery or bento tile: three across on a desktop, two on a tablet. */
+  fact: '(min-width: 1100px) 33vw, (min-width: 700px) 50vw, 90vw',
+  /** A product card in the menu grid: four across on a desktop, two on a phone. */
+  card: '(min-width: 1024px) 23vw, 48vw',
+  /** The wordmark, which is 98px at its widest and never changes. */
   mark: '110px',
 } as const
 

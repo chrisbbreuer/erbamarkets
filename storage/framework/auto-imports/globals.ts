@@ -30,6 +30,7 @@ declare global {
   const resolveStoreSlug: typeof autoImports.resolveStoreSlug
   const emptyProductReviews: typeof autoImports.emptyProductReviews
   const STORE_COOKIE: typeof autoImports.STORE_COOKIE
+  const IMAGE_MANIFEST: typeof autoImports.IMAGE_MANIFEST
   const activeRates: typeof autoImports.activeRates
   const totalsFor: typeof autoImports.totalsFor
   const blendedRate: typeof autoImports.blendedRate

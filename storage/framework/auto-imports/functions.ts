@@ -5,6 +5,7 @@ export { image, imageTone, placeholderFor, SIZES } from '../../../resources/func
 export type { ImageVariant, ImageEntry, ImageAttrs } from '../../../resources/functions/images'
 export { loadStores, loadCatalog, loadSpecials, loadSiteModel, loadProductReviews, money, telHref, potency, potencyLabel, resolveStoreSlug, emptyProductReviews, STORE_COOKIE } from '../../../resources/functions/site'
 export type { StoreView, ProductView, SpecialView, SiteModel, RequestScope, ReviewView, ProductReviews } from '../../../resources/functions/site'
+export { IMAGE_MANIFEST } from '../../../resources/functions/image-manifest'
 export { activeRates, totalsFor, blendedRate, looksLikeMmic, cardIsValidOn, totalsFrom } from '../../../resources/functions/tax'
 export type { MmicCard, Totals } from '../../../resources/functions/tax'
 export { resolveApiBaseUrl } from '../defaults/functions/api-url'
