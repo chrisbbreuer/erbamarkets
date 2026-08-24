@@ -389,7 +389,7 @@ const noMatches = derived(() => matchedIds() !== null && matchedIds().length ===
               data-cat="{{ product.category }}"
               :hidden="!shows('{{ product.id }}', '{{ product.category }}', {{ brandJson(product.brand) }}, '{{ product.strain }}')"
             >
-              <div class="card-media">
+              <div class="card-media" style="{{ product.imagePlaceholder ? `--card-tone: ${product.imagePlaceholder}` : '' }}">
                 {{--
                   A bare <img>: `.card-media` owns the box (4/5, overflow
                   hidden) and holds the space on its own, and `.card-strain`

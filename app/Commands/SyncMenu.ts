@@ -6,6 +6,7 @@ import { slug as slugify } from '@stacksjs/strings'
 import { ExitCode } from '@stacksjs/types'
 import menu from '../../config/menu'
 import { fetchProduct, fulfillmentOf, productUrls } from '../Integrations/Jane/client'
+import { averageColourOf, resetPlaceholderCircuit } from '../Integrations/Jane/placeholder'
 // Models are auto-imported as server globals in routes, actions and jobs, but
 // not in a buddy command, so they are imported the way the framework's own
 // code does it.
@@ -184,12 +185,27 @@ async function upsertProduct(
 
   const existing = await Product.where('slug', item.slug).first()
 
+  /*
+   * The placeholder colour, derived only when there is nothing to reuse.
+   *
+   * It costs one download of a photograph that averages half a megabyte, so
+   * it is worked out when a product first appears and whenever its image
+   * changes, and skipped on every other run. A full first import pays for six
+   * hundred; a nightly run after that usually pays for none.
+   *
+   * A failure here is not a reason to fail the import. The card falls back to
+   * the panel colour it used before this existed, and the next run that sees
+   * a changed URL will try again.
+   */
+  const reusable = existing && existing.image_url === item.imageUrl && existing.image_placeholder
+  const imagePlaceholder = reusable ? existing.image_placeholder : await averageColourOf(item.imageUrl)
+
   if (existing) {
-    await Product.update(existing.id, attributes)
+    await Product.update(existing.id, { ...attributes, imagePlaceholder })
     return existing.id
   }
 
-  const created = await Product.create({ ...attributes, slug: item.slug })
+  const created = await Product.create({ ...attributes, imagePlaceholder, slug: item.slug })
   return created.id
 }
 
@@ -421,6 +437,9 @@ export default function (buddy: CLI): void {
       const limit = Number(options.limit) || undefined
 
       try {
+        // Each run starts with a fresh count. The breaker is there to stop one
+        // bad night burning hours of timeouts, not to stay tripped forever.
+        resetPlaceholderCircuit()
         await syncMenu({ limit, dryRun: options.dryRun })
       }
       catch (error) {

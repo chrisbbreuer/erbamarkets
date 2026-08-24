@@ -211,7 +211,7 @@ const bagCount = state(0)
           <div class="grid">
             @foreach (shelf as product)
               <article class="card">
-                <div class="card-media">
+                <div class="card-media" style="{{ product.imagePlaceholder ? `--card-tone: ${product.imagePlaceholder}` : '' }}">
                   <img
                     src="{{ product.photo.src }}"
                     srcset="{{ product.photo.srcset }}"

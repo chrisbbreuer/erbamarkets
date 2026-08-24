@@ -5941,6 +5941,16 @@
             "isUnique": true,
             "isNullable": true,
             "hasDefault": false
+          },
+          {
+            "name": "image_placeholder",
+            "type": "string",
+            "isPrimaryKey": false,
+            "isUnique": false,
+            "isNullable": true,
+            "hasDefault": true,
+            "defaultValue": "",
+            "maxLength": 9
           }
         ],
         "indexes": [
@@ -10053,7 +10063,7 @@
       }
     ]
   },
-  "hash": "2799f95ec5f1d0c6b336a8baa784ea67b9bcf9c1b17fd75982cc3dd5b3f86b77",
+  "hash": "b3bcca18b9a49d9e1066f74c2853679dad4ba32ffeb438af1dea5efa0eee0b5d",
   "dialect": "sqlite",
-  "updatedAt": "2026-08-10T19:45:17.863Z"
+  "updatedAt": "2026-08-24T04:12:05.432Z"
 }

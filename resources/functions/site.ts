@@ -110,6 +110,8 @@ export interface ProductView {
   thcValue: number
   cbd: string
   potencyLabel: string
+  /** A hex colour to hold the card while the photograph arrives, or ''. */
+  imagePlaceholder: string
   image: string
   rating: string
   reviews: number
@@ -370,6 +372,12 @@ export async function loadCatalog(storeSlug = ''): Promise<{
       cbd: cbdLabel,
       potencyLabel: potencyLabel(thcLabel, cbdLabel),
       image: row.image_url || '',
+      /*
+       * Derived at import by `menu:sync`, because a product photograph lives
+       * on Jane's CDN and nothing in a build has ever opened it. See the note
+       * in app/Integrations/Jane/placeholder.ts.
+       */
+      imagePlaceholder: row.image_placeholder || '',
       rating: row.rating ? Number(row.rating).toFixed(1) : '',
       reviews: Number(row.review_count || 0),
       /*

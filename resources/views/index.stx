@@ -489,7 +489,7 @@ onMount(() => {
           <div class="grid">
             @foreach (featuredProducts as product)
               <article class="card">
-                <div class="card-media">
+                <div class="card-media" style="{{ product.imagePlaceholder ? `--card-tone: ${product.imagePlaceholder}` : '' }}">
                   <img
                     src="{{ product.photo.src }}"
                     srcset="{{ product.photo.srcset }}"

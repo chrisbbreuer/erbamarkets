@@ -143,6 +143,31 @@ export default defineModel({
       factory: faker => faker.image.url(),
     },
 
+    /**
+     * The colour a card shows while the photograph is still arriving.
+     *
+     * Every product image comes from Jane's CDN, so there is no build step
+     * that could have looked at one — `buddy images:build` only sees the files
+     * we host. Deriving it at render would mean six hundred outbound fetches
+     * before the first byte of HTML, so `menu:sync` works it out once, when it
+     * imports the product, and it lives here.
+     *
+     * A hex colour rather than a hash: a decoded SplatHash is a 4KB data URL,
+     * which is nothing on a page holding three of them and 2.5MB on a menu
+     * holding six hundred. At the size a card draws a product, the average of
+     * the photograph is most of the effect for twenty bytes.
+     */
+    imagePlaceholder: {
+      order: 12,
+      fillable: true,
+      default: '',
+      validation: {
+        rule: schema.string().max(9),
+        message: { string: 'Image placeholder must be a hex colour' },
+      },
+      factory: () => '',
+    },
+
     rating: {
       order: 12,
       fillable: true,

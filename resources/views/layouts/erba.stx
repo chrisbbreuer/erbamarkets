@@ -1366,7 +1366,14 @@
       /* Narrower cards want their padding back as content. */
       .card { display: flex; flex-direction: column; background: var(--ink); padding: 0.85rem 0.85rem 1rem; }
       @media (min-width: 640px) { .card { padding: 1.25rem; } }
-      .card-media { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--ink-raised); }
+      /*
+       * `--card-tone` is the product photograph's own average colour, set per
+       * card from a value `menu:sync` derived at import. It costs twenty bytes
+       * a card, where a real blur placeholder would be a 4.2KB data URL and
+       * six hundred of them would be 2.5MB of HTML. Falls back to the panel
+       * colour for anything imported before the column existed.
+       */
+      .card-media { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--card-tone, var(--ink-raised)); }
       .card-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
       .card:hover .card-media img { transform: scale(1.04); }
       .card-strain {
