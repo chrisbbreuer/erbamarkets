@@ -74,16 +74,16 @@
     "stx": "./buddy"
   },
   "dependencies": {
-    "@stacksjs/buddy": "^0.70.376",
-    "@stacksjs/commerce": "0.70.366",
+    "@stacksjs/buddy": "^0.74.46",
+    "@stacksjs/commerce": "0.74.46",
     "@stacksjs/logging": "0.70.366",
-    "@stacksjs/orm": "0.70.366",
-    "@stacksjs/scheduler": "^0.70.376",
-    "@stacksjs/stx": "^0.2.182",
-    "maplibre-gl": "^6.3.0",
-    "pickier": "^0.1.56",
+    "@stacksjs/orm": "0.74.46",
+    "@stacksjs/scheduler": "^0.74.46",
+    "@stacksjs/stx": "^0.2.286",
+    "maplibre-gl": "^6.9.0",
+    "pickier": "^0.1.65",
     "stacks": "^0.70.376",
-    "ts-images": "^0.2.8"
+    "ts-images": "^0.2.17"
   },
   "workspaces": [
     "storage/framework",
