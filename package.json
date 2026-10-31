@@ -74,16 +74,16 @@
     "stx": "./buddy"
   },
   "dependencies": {
-    "@stacksjs/buddy": "^0.70.376",
-    "@stacksjs/commerce": "0.70.366",
-    "@stacksjs/logging": "0.70.366",
-    "@stacksjs/orm": "0.70.366",
-    "@stacksjs/scheduler": "^0.70.376",
-    "@stacksjs/stx": "^0.2.182",
-    "maplibre-gl": "^6.3.0",
-    "pickier": "^0.1.56",
-    "stacks": "^0.70.376",
-    "ts-images": "^0.2.8"
+    "@stacksjs/buddy": "^0.75.401",
+    "@stacksjs/commerce": "0.75.401",
+    "@stacksjs/logging": "0.75.401",
+    "@stacksjs/orm": "0.75.401",
+    "@stacksjs/scheduler": "^0.75.401",
+    "@stacksjs/stx": "^0.2.778",
+    "maplibre-gl": "^6.16.0",
+    "pickier": "^0.1.81",
+    "stacks": "^0.75.401",
+    "ts-images": "^0.2.32"
   },
   "workspaces": [
     "storage/framework",
@@ -99,7 +99,7 @@
     "commit-msg": "bun x gitlint --edit \"$1\""
   },
   "devDependencies": {
-    "better-dx": "^0.2.22"
+    "better-dx": "^0.2.38"
   },
   "overrides": {
     "@stacksjs/stx": "^0.2.182",
